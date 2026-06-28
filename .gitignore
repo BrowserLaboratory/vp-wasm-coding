@@ -1,0 +1,148 @@
+# ==============================================================================
+# Project-specific (Spectra / SDD)
+# ==============================================================================
+.spectra/
+openspec/.vector-search.db*
+temp-refs/
+
+# ==============================================================================
+# OS / Editor
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ==============================================================================
+# Node.js
+# ==============================================================================
+node_modules/
+jspm_packages/
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.tsbuildinfo
+.eslintcache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist
+.docusaurus
+.svelte-kit/
+.turbo/
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+.env
+.env.*
+!.env.example
+.node_repl_history
+.grunt
+bower_components/
+web_modules/
+
+# ==============================================================================
+# Python
+# ==============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.hypothesis/
+*.cover
+*.py,cover
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+# Packaging / dependency managers
+__pypackages__/
+.pdm.toml
+.pdm-python
+.pdm-build/
+.python-version
+celerybeat-schedule
+celerybeat.pid
+
+# ==============================================================================
+# Rust
+# ==============================================================================
+/target/
+**/target/
+**/*.rs.bk
+*.pdb
+# Keep Cargo.lock for binaries; uncomment the next line for libraries
+# Cargo.lock
+
+# ==============================================================================
+# WebAssembly / wasm-pack
+# ==============================================================================
+/pkg/
+**/pkg/
+wasm-pack.log
+
+# ==============================================================================
+# Logs / temp
+# ==============================================================================
+*.log
+logs/
+*.tmp
+*.temp
+.history/
