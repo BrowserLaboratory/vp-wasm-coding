@@ -1,0 +1,21 @@
+{
+  "name": "vitepress-code-runner-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "pnpm -r test",
+    "build:wasm": "wasm-pack build crates/random-input-generator --target web --out-dir pkg"
+  },
+  "devDependencies": {
+    "@types/node": "^24.11.0",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^28.1.0",
+    "typescript": "~5.9.3",
+    "vitepress": "2.0.0-alpha.16",
+    "vitest": "^4.0.18",
+    "vue": "^3.5.29"
+  },
+  "packageManager": "pnpm@11.5.1"
+}

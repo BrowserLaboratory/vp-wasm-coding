@@ -1,0 +1,7 @@
+# Pyodide runtime is fetched as a setup step (see package.json "pyodide" script
+# / scripts/download-pyodide.sh) — not checked in.
+vendor/
+
+# VitePress build/cache output
+.vitepress/dist/
+.vitepress/cache/

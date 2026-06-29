@@ -1,0 +1,16 @@
+{
+  "name": "@vp-code-runner/core",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./worker": "./src/worker/pyodide.worker.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pyodide": "^0.29.3"
+  }
+}

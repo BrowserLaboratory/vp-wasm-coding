@@ -1,0 +1,17 @@
+{
+  "name": "@vp-code-runner/example-basic",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal VitePress consumer proving @vp-code-runner/vitepress works end-to-end (no COOP/COEP).",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "pyodide": "bash ../../packages/vitepress-code-runner/scripts/download-pyodide.sh vendor/pyodide"
+  },
+  "dependencies": {
+    "@vp-code-runner/core": "workspace:*",
+    "@vp-code-runner/vitepress": "workspace:*"
+  }
+}

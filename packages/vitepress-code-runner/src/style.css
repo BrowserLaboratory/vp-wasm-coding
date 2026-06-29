@@ -1,0 +1,51 @@
+/**
+ * @vp-code-runner/vitepress — package style entry (referenced by package.json
+ * `exports["./style.css"]`).
+ *
+ * The components ship fully self-contained *scoped* CSS, so importing this file
+ * is OPTIONAL. It only defines the `--vpcr-*` theming custom properties that the
+ * components reference via fallbacks, letting a consumer recolour the runner
+ * without touching component internals. Override any of these in your own CSS
+ * (e.g. under `:root` or `.dark`).
+ */
+:root {
+  /* Surfaces & text */
+  --vpcr-fg: inherit;
+  --vpcr-muted: #6e7781;
+  --vpcr-border: #d0d7de;
+  --vpcr-border-subtle: #eaecef;
+  --vpcr-font: inherit;
+  --vpcr-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Layout sizing */
+  --vpcr-editor-height: 240px;
+  --vpcr-results-height: 320px;
+
+  /* Buttons */
+  --vpcr-run-bg: #059669;
+  --vpcr-run-bg-hover: #047857;
+  --vpcr-stop-bg: #dc2626;
+  --vpcr-stop-bg-hover: #b91c1c;
+  --vpcr-busy-bg: #9ca3af;
+  --vpcr-error-bg: rgba(220, 38, 38, 0.08);
+
+  /* Verdict colors */
+  --vpcr-ac-fg: #059669;
+  --vpcr-ac-bg: rgba(5, 150, 105, 0.12);
+  --vpcr-wa-fg: #dc2626;
+  --vpcr-wa-bg: rgba(220, 38, 38, 0.12);
+  --vpcr-re-fg: #c2410c;
+  --vpcr-re-bg: rgba(194, 65, 12, 0.12);
+  --vpcr-tle-fg: #b45309;
+  --vpcr-tle-bg: rgba(180, 83, 9, 0.12);
+}
+
+.dark {
+  --vpcr-muted: #8b949e;
+  --vpcr-border: #30363d;
+  --vpcr-border-subtle: #21262d;
+  --vpcr-ac-fg: #3fb950;
+  --vpcr-wa-fg: #f85149;
+  --vpcr-re-fg: #fb8500;
+  --vpcr-tle-fg: #d29922;
+}
