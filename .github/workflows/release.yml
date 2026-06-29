@@ -64,7 +64,7 @@ jobs:
           # falls back to NPM_TOKEN; with neither, publish fails loudly.
           #
           # OPERATOR SETUP (one-time, on npmjs.com): for EACH package, add a
-          # Trusted Publisher → GitHub Actions, repo CXPhoenix/vitepress-wasm-coding,
+          # Trusted Publisher → GitHub Actions, repo BrowserLaboratory/vp-wasm-coding,
           # workflow `release.yml`. A package must exist before its trusted
           # publisher can be configured, so the FIRST publish of a brand-new
           # package uses a granular NPM_TOKEN (set the secret); afterwards the

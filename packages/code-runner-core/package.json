@@ -14,14 +14,14 @@
   ],
   "license": "ECL-2.0",
   "author": "CXPhoenix",
-  "homepage": "https://github.com/CXPhoenix/vitepress-wasm-coding#readme",
+  "homepage": "https://github.com/BrowserLaboratory/vp-wasm-coding#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CXPhoenix/vitepress-wasm-coding.git",
+    "url": "git+https://github.com/BrowserLaboratory/vp-wasm-coding.git",
     "directory": "packages/code-runner-core"
   },
   "bugs": {
-    "url": "https://github.com/CXPhoenix/vitepress-wasm-coding/issues"
+    "url": "https://github.com/BrowserLaboratory/vp-wasm-coding/issues"
   },
   "type": "module",
   "sideEffects": false,
