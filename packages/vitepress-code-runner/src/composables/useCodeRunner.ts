@@ -1,6 +1,6 @@
 /**
  * useCodeRunner — the Vue reactivity layer over the framework-agnostic core
- * (task 6.1). Vue refs live HERE; `@vp-code-runner/core` stays pure TS.
+ * (task 6.1). Vue refs live HERE; `@cxphoenix/vp-wasm-coding-core` stays pure TS.
  *
  * It wraps both core controllers:
  *   - `createExecutor` → `run(code, testcases)` (verdict-compared run)
@@ -25,7 +25,7 @@ import {
   type RunSummary,
   type Testcase,
   type VerdictDetail,
-} from '@vp-code-runner/core'
+} from '@cxphoenix/vp-wasm-coding-core'
 import { resolvePyodideIndexURL, type AssetBaseConfig } from '../config'
 
 export type RunnerStatus = 'idle' | 'running' | 'done'

@@ -12,7 +12,7 @@
  *
  * Usage (VitePress `.vitepress/config.ts`):
  *
- *   import { codeRunnerAssets } from '@vp-code-runner/vitepress/vite'
+ *   import { codeRunnerAssets } from '@cxphoenix/vp-wasm-coding/vite'
  *   export default defineConfig({
  *     base: '/my-repo/',
  *     vite: {
@@ -29,6 +29,7 @@
  */
 import { promises as fs, existsSync, statSync } from 'node:fs'
 import { join, posix, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // ── Inlined minimal Vite types (no `import` from 'vite') ─────────────────────
 
@@ -76,6 +77,10 @@ export interface CodeRunnerAssetsOptions {
   /**
    * Filesystem path to the generator's wasm-pack `pkg` directory (contains
    * `random_input_generator.js` and `random_input_generator_bg.wasm`).
+   *
+   * Defaults to the WASM bundled inside this package (`dist/generator`), so a
+   * plain `npm install` works with no configuration. Set this only to override
+   * with a self-hosted generator build.
    */
   generatorDir?: string
   /** Public site base (must match Vite/VitePress `base`). Default `'/'`. */
@@ -130,11 +135,29 @@ function isUsableDir(dir: string | undefined): dir is string {
   return !!dir && existsSync(dir) && statSync(dir).isDirectory()
 }
 
+/**
+ * The generator WASM bundled inside this package, resolved relative to this
+ * module. In the published build the plugin lives at `dist/vite/plugin.mjs`, so
+ * `../generator` resolves to `dist/generator` (populated by the package build).
+ * Returns undefined if the location can't be resolved.
+ */
+function bundledGeneratorDir(): string | undefined {
+  try {
+    return fileURLToPath(new URL('../generator', import.meta.url))
+  } catch {
+    return undefined
+  }
+}
+
 // ── Plugin ────────────────────────────────────────────────────────────────────
 
 export function codeRunnerAssets(options: CodeRunnerAssetsOptions = {}): Plugin {
   const pyodidePublic = (options.pyodidePublicDir ?? 'pyodide').replace(/^\/+|\/+$/g, '')
   const generatorPublic = (options.generatorPublicDir ?? 'wasm').replace(/^\/+|\/+$/g, '')
+
+  // Generator defaults to the WASM bundled inside this package; an explicit
+  // option overrides it (self-hosted build).
+  const generatorDir = options.generatorDir ?? bundledGeneratorDir()
 
   // `base` may be refined from the resolved Vite config when not passed explicitly.
   let base = withTrailingSlash(options.base ?? '/')
@@ -143,8 +166,31 @@ export function codeRunnerAssets(options: CodeRunnerAssetsOptions = {}): Plugin 
   function mounts(): Array<[string, string]> {
     const result: Array<[string, string]> = []
     if (isUsableDir(options.pyodideDir)) result.push([pyodidePublic, options.pyodideDir])
-    if (isUsableDir(options.generatorDir)) result.push([generatorPublic, options.generatorDir])
+    if (isUsableDir(generatorDir)) result.push([generatorPublic, generatorDir])
     return result
+  }
+
+  /**
+   * Surface per-asset silent failures: a directory that was configured (or, for
+   * the generator, expected via the bundled default) but is not usable would
+   * otherwise be dropped without a trace, even when the other asset mounts. Only
+   * fires for dirs that are present-but-broken, so it stays noise-free for the
+   * legitimate "no Pyodide / bundled generator present" cases.
+   */
+  function warnMissing(warn: (msg: string) => void): void {
+    if (options.pyodideDir !== undefined && !isUsableDir(options.pyodideDir)) {
+      warn(
+        `[vp-code-runner:assets] pyodideDir was set but is not a usable directory: ` +
+          `${options.pyodideDir} — Pyodide assets will not be served.`,
+      )
+    }
+    if (generatorDir !== undefined && !isUsableDir(generatorDir)) {
+      const src = options.generatorDir !== undefined ? 'generatorDir was set' : 'the bundled generator'
+      warn(
+        `[vp-code-runner:assets] ${src} but is not a usable directory: ` +
+          `${generatorDir} — generate_challenge will be unavailable.`,
+      )
+    }
   }
 
   return {
@@ -158,6 +204,7 @@ export function codeRunnerAssets(options: CodeRunnerAssetsOptions = {}): Plugin 
 
     // Dev: serve the files straight from their source directories.
     configureServer(server) {
+      warnMissing((msg) => console.warn(msg))
       const active = mounts()
       server.middlewares.use((req, res, next) => {
         if (!req.url) return next()
@@ -197,6 +244,7 @@ export function codeRunnerAssets(options: CodeRunnerAssetsOptions = {}): Plugin 
     // verbatim (no hashing) so the runtime URLs from `resolvePyodideIndexURL` /
     // `resolveGeneratorGlueURL` resolve after `base` is applied.
     async generateBundle() {
+      warnMissing((msg) => this.warn(msg))
       const active = mounts()
       if (active.length === 0) {
         this.warn(

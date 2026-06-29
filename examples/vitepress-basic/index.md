@@ -22,7 +22,7 @@ const generatorCode = 'print(int(input()) * 2)'
 
 # CodeRunner — VitePress consumer example
 
-This page proves the extracted **`@vp-code-runner/vitepress`** library runs Python
+This page proves the extracted **`@cxphoenix/vp-wasm-coding`** library runs Python
 fully client-side via Pyodide, on a plain static host with **no COOP/COEP** headers.
 
 ## Exercise: double the number

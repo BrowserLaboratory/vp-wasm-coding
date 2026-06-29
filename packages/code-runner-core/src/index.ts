@@ -1,5 +1,5 @@
 /**
- * @vp-code-runner/core — framework-agnostic Python execution engine.
+ * @cxphoenix/vp-wasm-coding-core — framework-agnostic Python execution engine.
  *
  * Pure TypeScript: no Vue, Pinia, or VitePress. Runs Python in an isolated
  * Pyodide worker, captures stdin/stdout, and produces AC/WA/RE/TLE verdicts.

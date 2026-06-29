@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest'
  * without a real Pyodide worker. Each controller's `run`/`submit` streams two
  * results (one AC, one WA) through the provided callbacks then completes.
  */
-vi.mock('@vp-code-runner/core', () => {
+vi.mock('@cxphoenix/vp-wasm-coding-core', () => {
   const fakeResults = [
     { type: 'testcase_result', index: 0, verdict: 'AC', elapsed_ms: 5 },
     { type: 'testcase_result', index: 1, verdict: 'WA', elapsed_ms: 7, actual: '5', expected: '6' },

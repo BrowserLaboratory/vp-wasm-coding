@@ -21,7 +21,7 @@
  * `--vpcr-*` CSS custom properties (see `style.css`) allow optional theming.
  */
 import { ref, computed, watch, onBeforeUnmount, type Component } from 'vue'
-import type { Testcase, VerdictDetail } from '@vp-code-runner/core'
+import type { Testcase, VerdictDetail } from '@cxphoenix/vp-wasm-coding-core'
 import EditorHost from '../editors/EditorHost.vue'
 import type { EditorAdapter } from '../editors/EditorAdapter'
 import { useCodeRunner } from '../composables/useCodeRunner'

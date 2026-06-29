@@ -1,0 +1,36 @@
+## 1. Scope rename (foundational — gates all later work)
+
+- [x] 1.1 Rename both packages to the `@cxphoenix` scope — `@cxphoenix/vp-wasm-coding` (was `@vp-code-runner/vitepress`) and `@cxphoenix/vp-wasm-coding-core` (was `@vp-code-runner/core`). Update the headline package's `workspace:*` dependency key, every `@vp-code-runner/*` import specifier in source, the `vi.mock('@vp-code-runner/core')` targets in `CodeRunner.spec.ts` and `CodeRunner.forged.spec.ts`, and all example-site imports (`examples/vitepress-basic/.vitepress/config.ts`, `.../theme/index.ts`, `examples/vitepress-basic/package.json`). Verify: `grep -rn '@vp-code-runner' packages examples` returns nothing, and the full test suite (core 76, vitepress 24, Rust 51 = 151) passes via the direct `node_modules/.bin/vitest run --root <pkg>` invocation. (Satisfies design decision: Scope rename to @cxphoenix with two published packages.)
+
+## 2. Build pipeline (Vite library mode + vite-plugin-dts for both packages)
+
+- [x] 2.0 Install build devDependencies at the workspace root (`vite-plugin-dts`, `vue-tsc`; confirm `vite`, `@vitejs/plugin-vue`, `vue` already present) and adjust `.gitignore` so `dist/` and the wasm-pack `pkg/` output are ignored (built, never committed) while keeping `crates/random-input-generator/src` tracked. Verify: `pnpm install` succeeds and `git status` shows no `dist`/`pkg` would be committed. (Satisfies design decision: Vite library mode with vite-plugin-dts for both packages.)
+- [x] 2.1 [P] Add Vite library-mode build with `vite-plugin-dts` to the core package (`packages/code-runner-core/vite.config.ts` + a `build` script in its `package.json`), emitting two entries — the engine index and the Pyodide worker — as ESM with `.d.ts`. The compiled `executor.js` MUST keep a downstream-resolvable `new URL('./<worker>.js', import.meta.url)` worker reference (Preserve the consumer-bundled Web Worker reference across the package boundary). Verify: `dist/` contains the index and worker `.mjs` + matching `.d.ts`, and the worker reference is present in the built engine file. (Satisfies requirement: Packages publish compiled distribution artifacts.)
+- [x] 2.2 [P] Add Vite library-mode build with `@vitejs/plugin-vue` and `vite-plugin-dts` (vue-tsc-backed declarations) to the vitepress package (`packages/vitepress-code-runner/vite.config.ts` + a `build` script in its `package.json`), emitting ESM for the component/composables/plugin/editor entries, the `.d.ts`, and the extracted `style.css`. Verify: `dist/` contains the entry `.mjs`, `style.css`, and `.d.ts`, and the public entry types resolve from a consumer TS context.
+
+## 3. Generator WASM bundling
+
+- [x] 3.1 Bundle the random-input-generator WASM into the headline package assets: run `wasm-pack build --target web` as part of the vitepress package build so the glue `.js`, `_bg.wasm`, and declarations land in the shipped `dist` assets, and default the `codeRunnerAssets` plugin's generator source directory (`packages/vitepress-code-runner/src/vite/plugin.ts`) to the in-package WASM location (resolved relative to the compiled plugin module) while keeping it overridable. Ensure the shipped glue filename agrees with the URL produced by `resolveGeneratorGlueURL` in `packages/vitepress-code-runner/src/config.ts`. Verify: the built package contains the generator glue + `_bg.wasm`, and the plugin resolves the default generator path without a consumer-supplied `generatorDir`. (Satisfies requirement: The generator WASM ships inside the headline package.)
+
+## 4. Publish metadata
+
+- [x] 4.1 [P] Complete `packages/code-runner-core/package.json` publish metadata: `version: "0.1.0"`, `license: "ECL-2.0"`, `repository` (CXPhoenix/vitepress-wasm-coding), `description`, `keywords`, `files` limited to `dist`, `publishConfig.access: "public"`, and repoint `exports` (`.` and `./worker`) plus `main`/`module`/`types` at `dist` with both `import` and `types` conditions. Verify: `npm pack --dry-run` for the core package lists only `dist` + `package.json`/`README.md`/`LICENSE`. (Satisfies requirement: Packages declare complete publish metadata under the @cxphoenix scope.)
+- [x] 4.2 [P] Complete `packages/vitepress-code-runner/package.json` publish metadata: same fields as 4.1, and repoint `exports` (`.`, `./vite`, `./editors/codemirror`, `./style.css`) at `dist` with `import`/`types` conditions. Verify: `npm pack --dry-run` for the headline package lists only `dist` (including the bundled generator WASM) + metadata files, with no `src` or `*.spec.*`. (Satisfies requirement: Published package contents are limited to distribution artifacts and metadata.)
+
+## 5. Repository essentials
+
+- [x] 5.1 [P] Add the root `LICENSE` file containing the verbatim Educational Community License 2.0 text copied from an authoritative source (opensource.org / SPDX) — not hand-written or paraphrased (ECL-2.0 license text copied from an authoritative source). Verify: the file body matches the canonical ECL-2.0 text.
+- [x] 5.2 [P] Add a root `README.md` documenting installation (`npm install @cxphoenix/vp-wasm-coding`), registering the Vite plugin and component, the consumer-supplied Pyodide asset step, and the security boundary summary. Verify: the README references the correct scoped package names and the install-to-usage flow.
+
+## 6. Continuous integration
+
+- [x] 6.1 Add `.github/workflows/ci.yml` that, on push and pull_request, installs the Rust toolchain + wasm-pack and pnpm + Node, builds the generator WASM, runs the Rust tests, then builds, typechecks, and tests both JavaScript packages — with the WASM built before any consuming step (GitHub Actions CI builds WASM then builds, typechecks, and tests all packages). Verify: the workflow YAML is valid and runs the same build/test commands that pass locally, in WASM-first order. (Satisfies requirement: Continuous integration builds and verifies all packages.)
+
+## 7. Release automation (Changesets)
+
+- [x] 7.1 Add Changesets for versioning and tag/release-triggered npm publish: install `@changesets/cli` at the root and add `.changeset/config.json` configured for the pnpm monorepo with public access. Verify: `pnpm changeset status` succeeds.
+- [x] 7.2 Add `.github/workflows/release.yml` running the Changesets release action: build the WASM and both packages, then `pnpm publish` authenticated by the `NPM_TOKEN` secret, rewriting the headline package's `workspace:*` core dependency to a concrete range, and failing loudly if `NPM_TOKEN` is absent. Verify: the workflow YAML is valid, gates publish on `NPM_TOKEN`, and builds the WASM before publishing. (Satisfies requirement: Release automation publishes to npm.)
+
+## 8. End-to-end acceptance gate
+
+- [x] 8.1 Verify the full published shape end to end: build both packages, build `examples/vitepress-basic` against the compiled packages, and run it in a real browser confirming Python AC/WA verdicts render and `generate_challenge` produces inputs from the bundled WASM; confirm `npm pack --dry-run` for both packages shows only `dist` + metadata; confirm the shipped public-entry `.d.ts` resolve; confirm the full test suite (151) passes and `pnpm changeset status` succeeds. Verify: all of the above succeed, matching the Implementation Contract acceptance criteria.

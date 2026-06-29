@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            crates/random-input-generator/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('crates/random-input-generator/Cargo.lock') }}
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # WASM must be built before any step that consumes it.
+      - name: Build generator WASM
+        run: pnpm build:wasm
+
+      - name: Test Rust crate
+        run: cargo test
+        working-directory: crates/random-input-generator
+
+      - name: Build packages
+        run: pnpm -r build
+
+      - name: Typecheck packages
+        run: pnpm -r typecheck
+
+      - name: Test packages
+        run: pnpm -r test

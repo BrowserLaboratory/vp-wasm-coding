@@ -1,6 +1,6 @@
 /**
- * @vp-code-runner/vitepress — VitePress packaging layer for the pure-TS
- * `@vp-code-runner/core` Python execution engine.
+ * @cxphoenix/vp-wasm-coding — VitePress packaging layer for the pure-TS
+ * `@cxphoenix/vp-wasm-coding-core` Python execution engine.
  *
  * Ships an SSR-safe `CodeRunner` component, the Vue composables that hold the
  * reactivity, the pluggable editor host (default CodeMirror), and a configurable
@@ -57,4 +57,4 @@ export type {
 export { CodeMirrorEditor, pythonStdlibCompletions } from './editors/codemirror'
 
 // ── Re-exported core types consumers commonly need ──────────────────────────────
-export type { Testcase, TestcaseResult, RunSummary, VerdictDetail } from '@vp-code-runner/core'
+export type { Testcase, TestcaseResult, RunSummary, VerdictDetail } from '@cxphoenix/vp-wasm-coding-core'

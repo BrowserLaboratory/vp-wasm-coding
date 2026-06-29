@@ -1,19 +1,67 @@
 {
-  "name": "@vp-code-runner/vitepress",
-  "version": "0.0.0",
+  "name": "@cxphoenix/vp-wasm-coding",
+  "version": "0.1.0",
+  "description": "VitePress component for a client-side Python coding playground — Pyodide in a Web Worker, AC/WA/RE/TLE verdicts, a bundled random-input generator, and a pluggable editor. No COOP/COEP required.",
+  "keywords": [
+    "vitepress",
+    "vue",
+    "pyodide",
+    "python",
+    "code-runner",
+    "wasm",
+    "client-side",
+    "in-browser",
+    "codemirror"
+  ],
+  "license": "ECL-2.0",
+  "author": "CXPhoenix",
+  "homepage": "https://github.com/CXPhoenix/vitepress-wasm-coding#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CXPhoenix/vitepress-wasm-coding.git",
+    "directory": "packages/vitepress-code-runner"
+  },
+  "bugs": {
+    "url": "https://github.com/CXPhoenix/vitepress-wasm-coding/issues"
+  },
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./vite": "./src/vite/plugin.ts",
-    "./editors/codemirror": "./src/editors/codemirror/index.ts",
-    "./style.css": "./src/style.css"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./vite": {
+      "types": "./dist/vite/plugin.d.ts",
+      "import": "./dist/vite/plugin.mjs"
+    },
+    "./editors/codemirror": {
+      "types": "./dist/editors/codemirror/index.d.ts",
+      "import": "./dist/editors/codemirror/index.mjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist",
+    "scripts/download-pyodide.sh",
+    "SECURITY.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
+    "build": "wasm-pack build ../../crates/random-input-generator --target web --out-dir pkg && vite build && vue-tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "prepack": "cp ../../LICENSE ./LICENSE",
     "test": "vitest run",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@vp-code-runner/core": "workspace:*",
+    "@cxphoenix/vp-wasm-coding-core": "workspace:*",
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.2",
     "@codemirror/lang-python": "^6.2.1",

@@ -6,7 +6,7 @@ import { mount, flushPromises } from '@vue/test-utils'
  * Fake the core so the component test stays independent of real Pyodide /
  * CodeMirror. The executor streams two results (AC, WA) then completes.
  */
-vi.mock('@vp-code-runner/core', () => {
+vi.mock('@cxphoenix/vp-wasm-coding-core', () => {
   const fakeResults = [
     { type: 'testcase_result', index: 0, verdict: 'AC', elapsed_ms: 3 },
     { type: 'testcase_result', index: 1, verdict: 'WA', elapsed_ms: 4, actual: '5', expected: '6' },

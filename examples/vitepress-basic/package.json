@@ -1,9 +1,9 @@
 {
-  "name": "@vp-code-runner/example-basic",
+  "name": "@cxphoenix/vp-wasm-coding-example-basic",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Minimal VitePress consumer proving @vp-code-runner/vitepress works end-to-end (no COOP/COEP).",
+  "description": "Minimal VitePress consumer proving @cxphoenix/vp-wasm-coding works end-to-end (no COOP/COEP).",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
@@ -11,7 +11,7 @@
     "pyodide": "bash ../../packages/vitepress-code-runner/scripts/download-pyodide.sh vendor/pyodide"
   },
   "dependencies": {
-    "@vp-code-runner/core": "workspace:*",
-    "@vp-code-runner/vitepress": "workspace:*"
+    "@cxphoenix/vp-wasm-coding-core": "workspace:*",
+    "@cxphoenix/vp-wasm-coding": "workspace:*"
   }
 }

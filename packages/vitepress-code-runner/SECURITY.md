@@ -1,6 +1,6 @@
 # Security model
 
-`@vp-code-runner/vitepress` runs **arbitrary user-supplied Python** in the
+`@cxphoenix/vp-wasm-coding` runs **arbitrary user-supplied Python** in the
 visitor's own browser via Pyodide. Read this before deploying it anywhere that
 matters.
 

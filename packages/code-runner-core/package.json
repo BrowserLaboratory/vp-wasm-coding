@@ -1,12 +1,52 @@
 {
-  "name": "@vp-code-runner/core",
-  "version": "0.0.0",
+  "name": "@cxphoenix/vp-wasm-coding-core",
+  "version": "0.1.0",
+  "description": "Framework-agnostic, client-side Python execution engine — Pyodide in a Web Worker, AC/WA/RE/TLE verdicts, no COOP/COEP required.",
+  "keywords": [
+    "pyodide",
+    "python",
+    "web-worker",
+    "wasm",
+    "code-runner",
+    "client-side",
+    "in-browser",
+    "judge"
+  ],
+  "license": "ECL-2.0",
+  "author": "CXPhoenix",
+  "homepage": "https://github.com/CXPhoenix/vitepress-wasm-coding#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CXPhoenix/vitepress-wasm-coding.git",
+    "directory": "packages/code-runner-core"
+  },
+  "bugs": {
+    "url": "https://github.com/CXPhoenix/vitepress-wasm-coding/issues"
+  },
   "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./worker": "./src/worker/pyodide.worker.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./worker": {
+      "types": "./dist/worker/pyodide.worker.d.ts",
+      "import": "./dist/worker/pyodide.worker.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
+    "build": "vite build",
+    "prepack": "cp ../../LICENSE ./LICENSE",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

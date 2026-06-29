@@ -5,6 +5,9 @@
 openspec/.vector-search.db*
 temp-refs/
 
+# Per-package LICENSE is copied from the root by each package's `prepack`.
+packages/*/LICENSE
+
 # ==============================================================================
 # OS / Editor
 # ==============================================================================

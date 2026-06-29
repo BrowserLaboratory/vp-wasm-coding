@@ -7,7 +7,7 @@ import { mount, flushPromises } from '@vue/test-utils'
  * via the `js` FFI, including a non-number `elapsed_ms`. The results table must
  * render it safely (placeholder) instead of throwing on `.toFixed()`.
  */
-vi.mock('@vp-code-runner/core', () => {
+vi.mock('@cxphoenix/vp-wasm-coding-core', () => {
   const forged = [
     // elapsed_ms deliberately NOT a number — as a forged message could deliver.
     { type: 'testcase_result', index: 0, verdict: 'AC', elapsed_ms: 'not-a-number' as unknown as number },

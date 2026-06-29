@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency: release-${{ github.ref }}
+
+# The Changesets action opens/updates the version PR and pushes tags; npm
+# publish needs the registry token.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Version or publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build the WASM and the packages BEFORE publishing.
+      - name: Build generator WASM
+        run: pnpm build:wasm
+
+      - name: Build packages
+        run: pnpm -r build
+
+      - name: Create Release PR or publish to npm
+        uses: changesets/action@v1
+        with:
+          # `pnpm publish` rewrites the headline package's `workspace:*` core
+          # dependency to a concrete version range on publish (npm publish does
+          # not). Without a valid token, publish fails loudly (ENEEDAUTH) rather
+          # than silently skipping.
+          version: pnpm changeset version
+          publish: pnpm publish -r --access public --no-git-checks
+          commit: 'chore: version packages'
+          title: 'chore: version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

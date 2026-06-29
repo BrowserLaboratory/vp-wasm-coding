@@ -1,6 +1,6 @@
-# @vp-code-runner/vitepress
+# @cxphoenix/vp-wasm-coding
 
-VitePress packaging layer for the pure-TS `@vp-code-runner/core` Python
+VitePress packaging layer for the pure-TS `@cxphoenix/vp-wasm-coding-core` Python
 execution engine. Drop a `CodeRunner` into any VitePress / Vue 3 page to get an
 editor + run button + per-testcase AC/WA/RE/TLE results — running Python fully
 client-side via Pyodide, with random inputs from a Rust→WASM generator.
@@ -10,7 +10,7 @@ Works on a plain static host (e.g. GitHub Pages) with **no COOP/COEP** headers.
 ## Install
 
 ```sh
-pnpm add @vp-code-runner/vitepress @vp-code-runner/core
+pnpm add @cxphoenix/vp-wasm-coding @cxphoenix/vp-wasm-coding-core
 ```
 
 ## Quick start
@@ -18,7 +18,7 @@ pnpm add @vp-code-runner/vitepress @vp-code-runner/core
 1. Fetch the pinned Pyodide runtime files:
 
    ```sh
-   bash node_modules/@vp-code-runner/vitepress/scripts/download-pyodide.sh public/pyodide
+   bash node_modules/@cxphoenix/vp-wasm-coding/scripts/download-pyodide.sh public/pyodide
    ```
 
 2. Register the Vite plugin in `.vitepress/config.ts` so the Pyodide + generator
@@ -26,7 +26,7 @@ pnpm add @vp-code-runner/vitepress @vp-code-runner/core
 
    ```ts
    import { defineConfig } from 'vitepress'
-   import { codeRunnerAssets } from '@vp-code-runner/vitepress/vite'
+   import { codeRunnerAssets } from '@cxphoenix/vp-wasm-coding/vite'
 
    export default defineConfig({
      base: '/my-repo/', // non-root base is supported
@@ -46,8 +46,8 @@ pnpm add @vp-code-runner/vitepress @vp-code-runner/core
 
    ```vue
    <script setup lang="ts">
-   import { CodeRunner } from '@vp-code-runner/vitepress'
-   import '@vp-code-runner/vitepress/style.css' // optional theming variables
+   import { CodeRunner } from '@cxphoenix/vp-wasm-coding'
+   import '@cxphoenix/vp-wasm-coding/style.css' // optional theming variables
    </script>
 
    <template>
