@@ -1,6 +1,6 @@
 {
   "name": "@cxphoenix/vp-wasm-coding",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "VitePress component for a client-side Python coding playground — Pyodide in a Web Worker, AC/WA/RE/TLE verdicts, a bundled random-input generator, and a pluggable editor. No COOP/COEP required.",
   "keywords": [
     "vitepress",

@@ -1,6 +1,6 @@
 {
   "name": "@cxphoenix/vp-wasm-coding-example-basic",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "Minimal VitePress consumer proving @cxphoenix/vp-wasm-coding works end-to-end (no COOP/COEP).",
