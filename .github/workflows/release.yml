@@ -6,11 +6,15 @@ on:
 
 concurrency: release-${{ github.ref }}
 
-# The Changesets action opens/updates the version PR and pushes tags; npm
-# publish needs the registry token.
+# contents/pull-requests: the Changesets action opens the version PR and pushes
+# tags. id-token: lets pnpm publish authenticate to npm via OIDC trusted
+# publishing (no long-lived token) and emit provenance automatically. npm
+# classic tokens were revoked in Dec 2025, so OIDC is the primary auth path;
+# NPM_TOKEN (a granular token) is kept only as a fallback — see the publish step.
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release:
@@ -51,15 +55,27 @@ jobs:
       - name: Create Release PR or publish to npm
         uses: changesets/action@v1
         with:
-          # `pnpm publish` rewrites the headline package's `workspace:*` core
-          # dependency to a concrete version range on publish (npm publish does
-          # not). Without a valid token, publish fails loudly (ENEEDAUTH) rather
-          # than silently skipping.
+          # `pnpm publish` (pnpm >= 11.1) authenticates via OIDC trusted
+          # publishing when `id-token: write` is granted — it fetches a
+          # short-lived OIDC token that takes precedence over any static token
+          # and emits provenance automatically. It also rewrites the headline
+          # package's `workspace:*` core dependency to a concrete version on
+          # publish (npm/changeset publish do not). If OIDC is unavailable it
+          # falls back to NPM_TOKEN; with neither, publish fails loudly.
+          #
+          # OPERATOR SETUP (one-time, on npmjs.com): for EACH package, add a
+          # Trusted Publisher → GitHub Actions, repo CXPhoenix/vitepress-wasm-coding,
+          # workflow `release.yml`. A package must exist before its trusted
+          # publisher can be configured, so the FIRST publish of a brand-new
+          # package uses a granular NPM_TOKEN (set the secret); afterwards the
+          # token can be removed and OIDC takes over.
           version: pnpm changeset version
           publish: pnpm publish -r --access public --no-git-checks
           commit: 'chore: version packages'
           title: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fallback only — OIDC (id-token: write) is preferred. Used for the
+          # first publish of a package before its trusted publisher exists.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
