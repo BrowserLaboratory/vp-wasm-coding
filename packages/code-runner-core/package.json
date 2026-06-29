@@ -1,6 +1,6 @@
 {
   "name": "@cxphoenix/vp-wasm-coding-core",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Framework-agnostic, client-side Python execution engine — Pyodide in a Web Worker, AC/WA/RE/TLE verdicts, no COOP/COEP required.",
   "keywords": [
     "pyodide",
