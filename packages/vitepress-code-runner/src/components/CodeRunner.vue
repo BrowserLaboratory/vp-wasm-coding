@@ -137,6 +137,17 @@ const verdictClass: Record<string, string> = {
   TLE: 'vpcr-verdict--tle',
 }
 
+/**
+ * Defensive formatter for the elapsed-time cell. The result `elapsed_ms` is
+ * typed `number`, but worker→main messages can be forged at runtime by
+ * untrusted Python via the `js` FFI, so a non-number could reach the template.
+ * Calling `.toFixed()` on a non-number would throw and break rendering, so we
+ * coerce safely instead.
+ */
+function fmtMs(v: unknown): string {
+  return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(0) : '—'
+}
+
 onBeforeUnmount(() => runner.cleanup())
 
 defineExpose({ run: onRun, stop: onStop, code })
@@ -209,7 +220,7 @@ defineExpose({ run: onRun, stop: onStop, code })
                 {{ result.verdict }}
               </span>
             </td>
-            <td class="vpcr-col-time">{{ result.elapsed_ms.toFixed(0) }} ms</td>
+            <td class="vpcr-col-time">{{ fmtMs(result.elapsed_ms) }} ms</td>
             <td class="vpcr-col-detail">
               <template v-if="result.verdict === 'WA' && verdictDetail === 'full'">
                 預期 <code class="vpcr-expected">{{ result.expected }}</code> · 實際

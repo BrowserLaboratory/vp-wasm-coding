@@ -128,7 +128,65 @@ pub enum FakerCategory {
 /// the line order in the generated stdin input string.
 pub type Params = IndexMap<String, ParamSpec>;
 
+/// Upper bounds that keep generation cheap and, more importantly, make absurd
+/// specs fail LOUDLY (a `Result::Err`) instead of panicking later: an inverted
+/// or empty range would otherwise panic inside `rng.gen_range`. These limits are
+/// generous for an educational dojo. Validation is enforced in `parse_params`.
+const MAX_LEN: usize = 100_000;
+const MAX_COUNT: usize = 10_000;
+
+fn validate_count(name: &str, count: &CountSpec) -> Result<(), String> {
+    if count.min > count.max {
+        return Err(format!(
+            "param '{name}': count.min ({}) must be <= count.max ({})",
+            count.min, count.max
+        ));
+    }
+    if count.max > MAX_COUNT {
+        return Err(format!(
+            "param '{name}': count.max ({}) exceeds limit {MAX_COUNT}",
+            count.max
+        ));
+    }
+    Ok(())
+}
+
+fn validate_len(
+    name: &str,
+    min_len: usize,
+    max_len: usize,
+    multiple_of: usize,
+) -> Result<(), String> {
+    if min_len > max_len {
+        return Err(format!(
+            "param '{name}': min_len ({min_len}) must be <= max_len ({max_len})"
+        ));
+    }
+    if max_len > MAX_LEN {
+        return Err(format!(
+            "param '{name}': max_len ({max_len}) exceeds limit {MAX_LEN}"
+        ));
+    }
+    // Mirror `rng::random_len`: ensure at least one multiple of `step` lies in
+    // [min_len, max_len], otherwise `gen_range(lo..=hi)` would panic.
+    let step = multiple_of.max(1);
+    // `div_ceil` avoids the `min_len + step - 1` overflow when `multiple_of` is
+    // absurdly large (the result is harmlessly rejected by the lo > hi check).
+    let lo = min_len.div_ceil(step);
+    let hi = max_len / step;
+    if lo > hi {
+        return Err(format!(
+            "param '{name}': no length in [{min_len}, {max_len}] is a multiple of {step}"
+        ));
+    }
+    Ok(())
+}
+
 /// Parse a JSON params object (from VitePress frontmatter) into an ordered Params map.
+///
+/// Validates every spec so that downstream generation can never panic on an
+/// inverted/empty range and never attempts an absurd allocation; invalid specs
+/// return a descriptive `Err`.
 ///
 /// Expected format:
 /// ```json
@@ -141,11 +199,32 @@ pub fn parse_params(json_str: &str) -> Result<Params, String> {
     let params: Params = serde_json::from_str(json_str)
         .map_err(|e| format!("JSON parse error: {e}"))?;
     for (name, spec) in &params {
-        if let ParamSpec::Enum { values, .. } = spec {
-            if values.is_empty() {
-                return Err(format!(
-                    "param '{name}': enum values must not be empty"
-                ));
+        match spec {
+            ParamSpec::Int { min, max, count } => {
+                if min > max {
+                    return Err(format!(
+                        "param '{name}': min ({min}) must be <= max ({max})"
+                    ));
+                }
+                validate_count(name, count)?;
+            }
+            ParamSpec::AlphaUpper { min_len, max_len, multiple_of, count }
+            | ParamSpec::AlphaLower { min_len, max_len, multiple_of, count }
+            | ParamSpec::AlphaMixed { min_len, max_len, multiple_of, count }
+            | ParamSpec::HexString { min_len, max_len, multiple_of, count }
+            | ParamSpec::PrintableAscii { min_len, max_len, multiple_of, count } => {
+                validate_len(name, *min_len, *max_len, *multiple_of)?;
+                validate_count(name, count)?;
+            }
+            ParamSpec::Enum { values, count } => {
+                if values.is_empty() {
+                    return Err(format!("param '{name}': enum values must not be empty"));
+                }
+                validate_count(name, count)?;
+            }
+            #[cfg(feature = "faker")]
+            ParamSpec::Faker { count, .. } => {
+                validate_count(name, count)?;
             }
         }
     }
@@ -279,6 +358,57 @@ mod tests {
         let result = parse_params(json);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("enum values must not be empty"));
+    }
+
+    // ── bounds validation (prevents downstream gen_range panics) ──────────────
+
+    #[test]
+    fn int_min_greater_than_max_returns_error() {
+        let json = r#"{"n": {"type": "int", "min": 100, "max": 10}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("must be <= max"), "got: {err}");
+    }
+
+    #[test]
+    fn count_min_greater_than_max_returns_error() {
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 10, "count": {"min": 5, "max": 2}}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("count.min"), "got: {err}");
+    }
+
+    #[test]
+    fn string_min_len_greater_than_max_len_returns_error() {
+        let json = r#"{"s": {"type": "alpha_upper", "min_len": 20, "max_len": 5}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("min_len"), "got: {err}");
+    }
+
+    #[test]
+    fn no_valid_multiple_length_returns_error() {
+        // min_len=max_len=3 but multiple_of=16 → no multiple of 16 in [3, 3]
+        let json = r#"{"s": {"type": "hex_string", "min_len": 3, "max_len": 3, "multiple_of": 16}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("multiple of"), "got: {err}");
+    }
+
+    #[test]
+    fn oversized_max_len_returns_error() {
+        let json = r#"{"s": {"type": "alpha_lower", "min_len": 1, "max_len": 100001}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("exceeds limit"), "got: {err}");
+    }
+
+    #[test]
+    fn oversized_count_returns_error() {
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 10, "count": {"min": 1, "max": 100000}}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("exceeds limit"), "got: {err}");
+    }
+
+    #[test]
+    fn valid_bounds_still_parse() {
+        let json = r#"{"a": {"type": "int", "min": 1, "max": 10}, "b": {"type": "hex_string", "min_len": 16, "max_len": 64, "multiple_of": 16}}"#;
+        assert!(parse_params(json).is_ok());
     }
 
     #[test]
