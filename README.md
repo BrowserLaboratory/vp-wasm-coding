@@ -1,4 +1,4 @@
-# vitepress-wasm-coding
+# vp-wasm-coding
 
 Drop a **client-side coding playground** into a [VitePress](https://vitepress.dev) site: students write Python in the browser, it runs in an isolated [Pyodide](https://pyodide.org) Web Worker, and per-testcase **AC / WA / RE / TLE** verdicts render inline. A bundled Rust→WASM random-input generator (`generate_challenge`) produces stdin so users don't have to type test inputs by hand.
 
