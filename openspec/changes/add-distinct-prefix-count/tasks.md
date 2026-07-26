@@ -32,3 +32,8 @@
 - [x] 6.1 依 design「未知欄位建構期拒絕」決策，ParamSpec 與 CountSpec 加 `#[serde(deny_unknown_fields)]`（Unknown parameter fields are rejected）。行為契約：頂層與 count 巢狀的拼錯欄位名於建構期報 `unknown field` 錯誤。驗證：parser 三個 typo 單元測試 + fixtures m23a/m23b 於 conformance harness 通過。
 - [x] 6.2 依 design「窄公開 API generate 取代 pub mod」決策，crates/random-input-generator/src/lib.rs 收回 `pub mod`，新增 `pub fn generate(params_json, count, rng) -> Result<Vec<String>, String>`（含 `count > 10_000` 上限錯誤），tests/conformance.rs 與 tests/quality.rs 改用此 API；rng.rs 的 positional tuple 改為具名 CommonFields 存取器。行為契約：繞過 parse_params 的建構路徑自 crate 外不可達；count 超限回傳描述性錯誤。驗證：lib.rs 上限測試 2 例 + 全測試套件 debug/release/--all-features 全綠。
 - [x] 6.3 .github/workflows/ci.yml 兩個 Rust 測試步驟加 `--all-features`（faker 路徑納入 CI 編譯與執行）；README 補「未知鍵拒絕」與「separator 為作者責任」節。驗證：本機 `cargo test --all-features` 與 `cargo test --release --all-features` 全綠；README 含兩節內容。
+
+## 7. Round 2 硬化（第二輪 audit + adversarial review 產出）
+
+- [x] 7.1 依 design「CI 恢復 default features 測試步驟」決策，.github/workflows/ci.yml 補回 `cargo test`（default features）步驟，形成 default / --all-features / --release --all-features 三步。行為契約：出貨組態（faker off）與 `cfg(not(feature = "faker"))` 拒絕測試在 CI 每次執行。驗證：本機三種組態全綠；ci.yml 含三個 Rust 測試步驟。
+- [x] 7.2 lib.rs 的 MAX_TESTCASES doc comment 改為誠實敘明僅上界輸入筆數（不宣稱防住 unbounded allocation）；README separator 節補 enum values 情形；rng.rs partial_shuffle_take 加 release 生效的自我描述 assert!。行為契約：合法輸入行為位元級不變，僅診斷與文件正確性改善。驗證：全測試套件三組態全綠。

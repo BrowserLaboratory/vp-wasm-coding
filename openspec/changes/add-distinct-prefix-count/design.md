@@ -72,3 +72,16 @@ Q1（輸出順序 smoke test：固定 seed 1000 行，完全升冪／降冪各 �
 ### 窄公開 API generate 取代 pub mod
 
 `parser` / `rng` 模組維持私有，改提供 `generate(params_json, count, rng) -> Result<Vec<String>, String>` 作為唯一 native 入口（整合測試與未來 native host 共用），並對 `count` 參數加上限（10^4，與 MAX_COUNT 同階）回傳錯誤。動機：pub mod 使呼叫端可繞過 parse_params 手工建構 spec，實測觸發 4 個 panic 點與無上界配置；窄 API 使 parse → generate 不可分離，rng 模組內的 unreachable 斷言回復為真正不可達。同時把 rng 內部 8 臂 match 的 positional tuple 改為具名 struct 存取器，使 distinct / prefix_count 欄位互換成為編譯錯誤。否決的替代案：恢復 debug_assert!（需求 I.3 點名的反例）、generate_input 回傳 Result（在抽樣邊界重跑驗證製造第二真相來源，與「建構期報錯」的落點矛盾）、separator 建構期拒絕（破 M22/AC-C2 且把 I.8 明文要求不要寫死的「一 param 一行」假設寫進 validator，改為 README 文件註記）。
+
+## Round 2 硬化決策（第二輪 audit + 雙鏡頭 adversarial review 後新增）
+
+### CI 恢復 default features 測試步驟
+
+Round 1 把 `cargo test` 改為 `cargo test --all-features` 造成出貨組態（wasm-pack 以 default features 建置，faker off）在 CI 零覆蓋，`cfg(not(feature = "faker"))` 的拒絕測試也不再執行——這是 Round 1 修法自己引入的覆蓋率退化。修正為三步：`cargo test`（default）、`cargo test --all-features`、`cargo test --release --all-features`。其餘 Round 2 findings 裁決：MAX_TESTCASES 註解改為誠實敘明只上界輸入筆數（aggregate byte budget 與 param 數上限須先在需求 I.5 補錯誤列，進 backlog）；enum values 含 separator 同樣降為 README 註記（全稱式拒絕會誤傷 count.max=1 的既有合法 params）；partial_shuffle_take 加 release 生效的自我描述 `assert!`（與現行 panic 行為等價，僅改善診斷）；rejection 迴圈上限＋fallback 與 separator 建構期拒絕為 Round 1 已否決案的重新包裝，無新事實不重翻；useWasmGenerator 吞錯經查證 UI 實際有錯誤訊息顯示（audit 高估），且 JS 端明文出界，改列 backlog。
+
+**Backlog（不在本 change，供後續提案）：**
+
+- 記憶體 aggregate budget 與 params 鍵數上限：先補需求 I.5 錯誤列與門檻依據（native/wasm32 環境相依）。
+- `useWasmGenerator.generateChallenge` 改 discriminated result 以在 UI 呈現 parser 錯誤細節：JS 套件獨立 change（已發佈 API 的 breaking 變更）。
+- 拒絕重複 param key（serde last-wins 靜默吞行）：先補 I.5 錯誤列，實作需自訂 serde visitor。
+- WASM + Node 環境的 Q3 效能量測：回灌時處理（既存 Non-Goal）。

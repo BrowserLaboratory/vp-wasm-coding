@@ -131,6 +131,14 @@ fn generate_distinct<R: Rng>(spec: &ParamSpec, n: usize, rng: &mut R) -> Vec<Str
 /// them. The result is a uniformly random n-subset in uniformly random order.
 /// Caller guarantees `n <= pool.len()` (enforced by parse_params).
 fn partial_shuffle_take<T, R: Rng>(mut pool: Vec<T>, n: usize, rng: &mut R) -> Vec<T> {
+    // Active in release too (unlike debug_assert!): if the parse-layer
+    // invariant is ever broken, fail with a self-describing message instead
+    // of an opaque gen_range panic deep inside rand.
+    assert!(
+        n <= pool.len(),
+        "partial_shuffle_take: n ({n}) must be <= pool.len() ({})",
+        pool.len()
+    );
     for i in 0..n {
         let j = rng.gen_range(i..pool.len());
         pool.swap(i, j);

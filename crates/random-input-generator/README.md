@@ -35,9 +35,10 @@ guarantee it was meant to enable.
 
 **Separators are the author's responsibility.** `count.separator` is joined
 verbatim and not validated: an empty string, a digit, a newline, or a character
-that can occur inside the values themselves (e.g. `,` with `printable_ascii`)
-produces output that may be ambiguous to re-split or span multiple lines.
-Choose a separator that cannot collide with your value alphabet.
+that can occur inside the values themselves (e.g. `,` with `printable_ascii`,
+or an `enum` whose `values` contain the separator) produces output that may be
+ambiguous to re-split or span multiple lines. Choose a separator that cannot
+collide with your value alphabet.
 
 ### Types
 

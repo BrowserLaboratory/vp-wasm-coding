@@ -7,9 +7,12 @@ use rand::rngs::SmallRng;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
-/// Upper bound on the number of testcase inputs per call. Keeps a huge `count`
-/// from the JS side from multiplying into unbounded allocation (each input can
-/// legally reach `MAX_COUNT` values of up to `MAX_LEN` chars).
+/// Upper bound on the number of testcase inputs per call. This bounds ONE
+/// factor of the allocation product: a legal spec can still ask for up to
+/// `MAX_COUNT × MAX_LEN` chars per param per input (~10^9), so total output
+/// remains host-bounded — on wasm32 an oversized but legal request traps on
+/// linear-memory limits rather than erroring here. An aggregate byte budget
+/// is deliberately out of scope until the requirement's error matrix covers it.
 const MAX_TESTCASES: usize = 10_000;
 
 /// Output of `generate_challenge`: a list of random stdin input strings,

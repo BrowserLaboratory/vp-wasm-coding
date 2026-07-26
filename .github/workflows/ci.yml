@@ -51,9 +51,15 @@ jobs:
       - name: Build generator WASM
         run: pnpm build:wasm
 
+      # Default features first: this is the exact configuration wasm-pack
+      # ships (faker off), incl. the cfg(not(feature = "faker")) rejection test.
+      - name: Test Rust crate
+        run: cargo test
+        working-directory: crates/random-input-generator
+
       # --all-features: the feature-gated faker paths (incl. its distinct
       # rejection) are otherwise never compiled or run in CI.
-      - name: Test Rust crate
+      - name: Test Rust crate (all features)
         run: cargo test --all-features
         working-directory: crates/random-input-generator
 
