@@ -1,0 +1,29 @@
+{
+  "description": "M2: int/prefix_count — `n x1 ... xn` with n = actual count",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 100,
+      "count": {
+        "min": 2,
+        "max": 8
+      },
+      "prefix_count": true
+    }
+  },
+  "iterations": 100,
+  "expect": {
+    "line": {
+      "prefix_count": true,
+      "count_range": [
+        2,
+        8
+      ],
+      "int_range": [
+        1,
+        100
+      ]
+    }
+  }
+}

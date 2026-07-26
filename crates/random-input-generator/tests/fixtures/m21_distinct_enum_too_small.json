@@ -1,0 +1,22 @@
+{
+  "description": "M21: deduplicated values count < count.max — construction-time error",
+  "params": {
+    "c": {
+      "type": "enum",
+      "values": [
+        "a",
+        "b",
+        "a"
+      ],
+      "count": {
+        "min": 3,
+        "max": 3
+      },
+      "distinct": true
+    }
+  },
+  "expect": {
+    "error": true,
+    "error_contains": "distinct"
+  }
+}

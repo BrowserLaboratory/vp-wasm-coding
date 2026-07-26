@@ -1,0 +1,26 @@
+{
+  "description": "M22: existing count params without new fields — space-joined, no prefix",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 100,
+      "count": {
+        "min": 3,
+        "max": 3
+      }
+    }
+  },
+  "expect": {
+    "line": {
+      "count_range": [
+        3,
+        3
+      ],
+      "int_range": [
+        1,
+        100
+      ]
+    }
+  }
+}

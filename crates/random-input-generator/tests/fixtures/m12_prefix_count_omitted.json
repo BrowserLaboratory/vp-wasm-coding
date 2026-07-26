@@ -1,0 +1,16 @@
+{
+  "description": "M12: prefix_count with count omitted \u2014 `1 value` (count omitted \u2261 min=max=1)",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 42,
+      "max": 42,
+      "prefix_count": true
+    }
+  },
+  "expect": {
+    "line": {
+      "exact": "1 42"
+    }
+  }
+}

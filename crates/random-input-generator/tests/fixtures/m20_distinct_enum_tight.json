@@ -1,0 +1,28 @@
+{
+  "description": "M20: deduplicated values count == count.max — permutation of the deduplicated list",
+  "params": {
+    "c": {
+      "type": "enum",
+      "values": [
+        "x",
+        "y",
+        "x",
+        "z"
+      ],
+      "count": {
+        "min": 3,
+        "max": 3
+      },
+      "distinct": true
+    }
+  },
+  "expect": {
+    "line": {
+      "permutation_of": [
+        "x",
+        "y",
+        "z"
+      ]
+    }
+  }
+}

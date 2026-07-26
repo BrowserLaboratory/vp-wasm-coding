@@ -1,0 +1,28 @@
+{
+  "description": "M7: distinct with count.min == count.max — exactly count.max distinct values",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 100,
+      "count": {
+        "min": 7,
+        "max": 7
+      },
+      "distinct": true
+    }
+  },
+  "expect": {
+    "line": {
+      "distinct": true,
+      "count_range": [
+        7,
+        7
+      ],
+      "int_range": [
+        1,
+        100
+      ]
+    }
+  }
+}

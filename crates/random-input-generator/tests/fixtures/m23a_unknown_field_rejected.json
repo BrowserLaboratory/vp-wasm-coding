@@ -1,0 +1,15 @@
+{
+  "description": "Hardening: misspelled prefix_count key must fail loudly, not silently disable the guarantee",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 10,
+      "prefix-count": true
+    }
+  },
+  "expect": {
+    "error": true,
+    "error_contains": "unknown field"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "description": "M3: alpha_upper/prefix_count — same format with string values",
+  "params": {
+    "s": {
+      "type": "alpha_upper",
+      "min_len": 2,
+      "max_len": 4,
+      "count": {
+        "min": 2,
+        "max": 5
+      },
+      "prefix_count": true
+    }
+  },
+  "expect": {
+    "line": {
+      "prefix_count": true,
+      "count_range": [
+        2,
+        5
+      ]
+    }
+  }
+}

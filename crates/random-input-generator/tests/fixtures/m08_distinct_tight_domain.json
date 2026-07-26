@@ -1,0 +1,28 @@
+{
+  "description": "M8: domain size == count.max — output is a random permutation of the domain",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 5,
+      "count": {
+        "min": 1,
+        "max": 5
+      },
+      "distinct": true
+    }
+  },
+  "expect": {
+    "line": {
+      "distinct": true,
+      "count_range": [
+        1,
+        5
+      ],
+      "int_range": [
+        1,
+        5
+      ]
+    }
+  }
+}

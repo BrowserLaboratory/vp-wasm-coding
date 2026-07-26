@@ -1,0 +1,16 @@
+{
+  "description": "M17: string type with distinct+prefix_count — prefix_count does not relax the restriction",
+  "params": {
+    "s": {
+      "type": "hex_string",
+      "min_len": 1,
+      "max_len": 5,
+      "distinct": true,
+      "prefix_count": true
+    }
+  },
+  "expect": {
+    "error": true,
+    "error_contains": "distinct"
+  }
+}

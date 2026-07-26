@@ -51,8 +51,17 @@ jobs:
       - name: Build generator WASM
         run: pnpm build:wasm
 
+      # --all-features: the feature-gated faker paths (incl. its distinct
+      # rejection) are otherwise never compiled or run in CI.
       - name: Test Rust crate
-        run: cargo test
+        run: cargo test --all-features
+        working-directory: crates/random-input-generator
+
+      # Release-config run is mandatory: it proves construction-time validation
+      # (error-path fixtures) survives release builds, where debug_assert! is
+      # stripped. Also the only config where the Q3 performance tests run.
+      - name: Test Rust crate (release)
+        run: cargo test --release --all-features
         working-directory: crates/random-input-generator
 
       - name: Build packages

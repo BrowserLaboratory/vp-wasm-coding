@@ -1,0 +1,36 @@
+{
+  "description": "M18: enum/distinct — pairwise distinct, values from list, count correct",
+  "params": {
+    "c": {
+      "type": "enum",
+      "values": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "count": {
+        "min": 2,
+        "max": 4
+      },
+      "distinct": true
+    }
+  },
+  "expect": {
+    "line": {
+      "distinct": true,
+      "count_range": [
+        2,
+        4
+      ],
+      "values_in": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ]
+    }
+  }
+}
