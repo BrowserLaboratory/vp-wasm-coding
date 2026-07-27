@@ -33,7 +33,7 @@
 - 值域大小 ≤ 4 × n（實際抽出個數；Round 3 由 count.max 修正為 n，避免 count 區間很寬、實際只抽少量值時展開整個值域）：將值域展開為陣列，partial Fisher–Yates 洗牌取前 n 個。最多展開 4 × 10^4 個元素（MAX_COUNT = 10^4），緊繃情境（值域大小 = n，排列）一次到位。
 - 值域大小 > 4 × n：rejection sampling + HashSet 去重，單次碰撞機率 < 1/4，期望重抽次數有上界，巨大值域（如 [1, 10^9] 取 10^4 個）不需展開。
 - 兩路徑輸出順序天然隨機，滿足「不得固定排序」規範，無需額外洗牌。門檻常數實作時可微調，但兩種極端行為不變。
-- 值域大小一律以飽和運算（`i64::saturating_sub` 後轉 `u64`／`u128`）計算，避免 `max − min + 1` 溢位。
+- 值域大小一律以 i128 寬型別運算（`(max as i128) - (min as i128) + 1`）計算，避免 `max − min + 1` 溢位（實作定案：寬型別而非飽和運算）。
 
 ### conformance fixtures 為 JSON 資料檔加 Rust harness
 
@@ -57,7 +57,7 @@ Q1（輸出順序 smoke test：固定 seed 1000 行，完全升冪／降冪各 �
 
 ## Risks / Trade-offs
 
-- [rejection sampling 在門檻邊界附近效能抖動] → 門檻 4 × count.max 保證碰撞機率 < 1/4，期望重試次數 < 4/3 倍；Q3 效能測試守住 100 ms 上限。
+- [rejection sampling 在門檻邊界附近效能抖動] → 門檻 4 × n（Round 3 後）保證碰撞機率 < 1/4，期望重試次數 < 4/3 倍；Q3 效能測試守住 100 ms 上限。
 - [`i64` 全值域（如 [i64::MIN, i64::MAX]）值域大小超過 u64] → 以 u128 或飽和語意計算值域大小；值域大小只需與 count.max（≤ 10^4）比較，飽和到上限即可判定「足夠大」。
 - [固定 seed 統計測試在演算法變更時可能翻紅] → seed 與門檻自持並記錄於測試註解，變更時依 Part II 條款由 review 把關。
 - [fixtures 宣告式期望類型設計過窄，未來 fixture 表達不了新行為] → 期望類型以 M1–M22 全矩陣驗證過再定案；新增期望類型屬向後相容擴充。
@@ -85,6 +85,7 @@ Round 1 把 `cargo test` 改為 `cargo test --all-features` 造成出貨組態�
 - `useWasmGenerator.generateChallenge` 改 discriminated result 以在 UI 呈現 parser 錯誤細節：JS 套件獨立 change（已發佈 API 的 breaking 變更）。
 - 拒絕重複 param key（serde last-wins 靜默吞行）：先補 I.5 錯誤列，實作需自訂 serde visitor。
 - WASM + Node 環境的 Q3 效能量測：回灌時處理（既存 Non-Goal）。
+- conformance harness 的期望鍵改用 deny_unknown_fields struct 反序列化（防 fixture 拼錯鍵靜默通過，鏡射產品端硬化）；rejection 路徑的均勻性統計測試（現僅 shuffle 路徑有 Q2）。
 
 ## Round 3 硬化決策（第三輪 audit + 雙鏡頭 adversarial review 後新增）
 

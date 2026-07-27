@@ -1,5 +1,5 @@
 {
-  "description": "M14: min > max — construction-time error (release config too)",
+  "description": "M14: min > max \u2014 construction-time error (release config too)",
   "params": {
     "n": {
       "type": "int",
@@ -8,6 +8,7 @@
     }
   },
   "expect": {
-    "error": true
+    "error": true,
+    "error_contains": "must be <= max"
   }
 }

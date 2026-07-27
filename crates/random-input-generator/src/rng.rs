@@ -95,7 +95,7 @@ fn generate_distinct<R: Rng>(spec: &ParamSpec, n: usize, rng: &mut R) -> Vec<Str
             let domain_size = (*max as i128) - (*min as i128) + 1;
             if domain_size <= EXPAND_FACTOR * n as i128 {
                 // Small domain: materialise and partially shuffle. Covers the
-                // tight case (domain == count.max → random permutation).
+                // tight case (domain == n → random permutation of the domain).
                 let pool: Vec<i64> = (*min..=*max).collect();
                 partial_shuffle_take(pool, n, rng)
                     .into_iter()

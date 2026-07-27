@@ -1,5 +1,5 @@
 {
-  "description": "M15: count.min > count.max — construction-time error (release config too)",
+  "description": "M15: count.min > count.max \u2014 construction-time error (release config too)",
   "params": {
     "n": {
       "type": "int",
@@ -12,6 +12,7 @@
     }
   },
   "expect": {
-    "error": true
+    "error": true,
+    "error_contains": "count.min"
   }
 }
