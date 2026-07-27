@@ -30,8 +30,8 @@
 
 ### 不放回抽樣採門檻式混合策略
 
-- 值域大小 ≤ 4 × count.max：將值域展開為陣列，partial Fisher–Yates 洗牌取前 n 個。最多展開 4 × 10^4 個元素（MAX_COUNT = 10^4），緊繃情境（值域大小 = count.max，排列）一次到位。
-- 值域大小 > 4 × count.max：rejection sampling + HashSet 去重，單次碰撞機率 < 1/4，期望重抽次數有上界，巨大值域（如 [1, 10^9] 取 10^4 個）不需展開。
+- 值域大小 ≤ 4 × n（實際抽出個數；Round 3 由 count.max 修正為 n，避免 count 區間很寬、實際只抽少量值時展開整個值域）：將值域展開為陣列，partial Fisher–Yates 洗牌取前 n 個。最多展開 4 × 10^4 個元素（MAX_COUNT = 10^4），緊繃情境（值域大小 = n，排列）一次到位。
+- 值域大小 > 4 × n：rejection sampling + HashSet 去重，單次碰撞機率 < 1/4，期望重抽次數有上界，巨大值域（如 [1, 10^9] 取 10^4 個）不需展開。
 - 兩路徑輸出順序天然隨機，滿足「不得固定排序」規範，無需額外洗牌。門檻常數實作時可微調，但兩種極端行為不變。
 - 值域大小一律以飽和運算（`i64::saturating_sub` 後轉 `u64`／`u128`）計算，避免 `max − min + 1` 溢位。
 
@@ -85,3 +85,9 @@ Round 1 把 `cargo test` 改為 `cargo test --all-features` 造成出貨組態�
 - `useWasmGenerator.generateChallenge` 改 discriminated result 以在 UI 呈現 parser 錯誤細節：JS 套件獨立 change（已發佈 API 的 breaking 變更）。
 - 拒絕重複 param key（serde last-wins 靜默吞行）：先補 I.5 錯誤列，實作需自訂 serde visitor。
 - WASM + Node 環境的 Q3 效能量測：回灌時處理（既存 Non-Goal）。
+
+## Round 3 硬化決策（第三輪 audit + 雙鏡頭 adversarial review 後新增）
+
+### 抽樣分支改用實際抽出個數與內部不變式編譯期化
+
+抽樣策略分支由「值域大小 ≤ 4 × count.max」修正為「≤ 4 × n（實際抽出個數）」：count 區間寬、實際抽出少量值時不再展開整個值域（如 count 1..10^4、值域 3×10^4 抽 1 個值原需展開 3×10^4 筆）。正確性不變（建構期保證值域 ≥ count.max ≥ n；rejection 碰撞率仍 < 1/4 且配置量收緊）；需求 I.3 明文演算法不指定，屬實作自由。既有品質測試參數組皆 count.min = count.max，固定 seed 串流位元不變，fixtures 期望為性質式不受影響。同輪一併：generate_distinct 的萬用臂展開為顯式 variant 列表（新增型別成為編譯錯誤而非 release panic，與 CommonFields 同一原則）；random_len 與 validate_len 統一 div_ceil；CI 補第四步 `cargo test --release`（default features 即出貨組態，滿足 AC-C1-5 字面要求，release 步驟註解改掛 AC-C1-5 論據）；quality.rs 修正 Q1 secondary 的錯誤路徑註解並增列第三組（值域 [1,50]、n=20，覆蓋展開洗牌分支的系統性排序守門——Part II 給定的兩組參數在本實作門檻策略下皆落 rejection 分支）；README 補 multiple_of < 1 視同 1 註記。否決：建構期拒絕 multiple_of: 0（既有合法欄位值、I.5 無對應列，破 M22——與 separator 案同級處置降為文件），進 backlog「I.5 補既有數值欄位值域錯誤列」。

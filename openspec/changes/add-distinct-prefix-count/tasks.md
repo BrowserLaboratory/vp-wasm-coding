@@ -5,7 +5,7 @@
 
 ## 2. 生成邏輯（rng）
 
-- [x] 2.1 依 design「不放回抽樣採門檻式混合策略」，在 crates/random-input-generator/src/rng.rs 實作 distinct 抽樣（Distinct values within a line）：值域大小 ≤ 4 × count.max 走展開 + partial Fisher–Yates 取前 n；否則 rejection sampling + HashSet。int 與去重後 enum 共用同一策略。行為契約：同行值兩兩相異、個數 ∈ [count.min, count.max]、值在值域內、輸出順序非固定排序；緊繃情境（值域大小 = count.max）輸出為值域的隨機排列（M7–M9）。驗證：rng 單元測試以固定 seed 覆蓋一般／緊繃／巨大值域三情境。
+- [x] 2.1 依 design「不放回抽樣採門檻式混合策略」，在 crates/random-input-generator/src/rng.rs 實作 distinct 抽樣（Distinct values within a line）：值域大小 ≤ 4 × n（實際抽出個數，Round 3 修正）走展開 + partial Fisher–Yates 取前 n；否則 rejection sampling + HashSet。int 與去重後 enum 共用同一策略。行為契約：同行值兩兩相異、個數 ∈ [count.min, count.max]、值在值域內、輸出順序非固定排序；緊繃情境（值域大小 = count.max）輸出為值域的隨機排列（M7–M9）。驗證：rng 單元測試以固定 seed 覆蓋一般／緊繃／巨大值域三情境。
 - [x] 2.2 在 rng.rs 實作 prefix_count 輸出（Prefix count line format）：行 = [n, v1..vn] 以 count.separator join；適用所有型別含 faker；n=0 時輸出恰為 `0`（M10）、未開 prefix_count 時 n=0 輸出空行（M11）；count 省略時輸出 `1<sep>值`（M12）；與 distinct 併用時兩者同時滿足（M6）。驗證:rng 單元測試覆蓋 M2–M6、M10–M12,含非空格 separator。
 - [x] 2.3 依 design「CI 增加 release 組態測試並移除既有 debug_assert」決策的 rng 部分,移除 rng.rs 中 generate_one 與 random_len 的兩處 `debug_assert!`,改為依賴 parse 層保證的註解說明(不引入 panic 路徑)。行為契約:release 與 debug 組態行為一致,無僅 debug 生效的驗證。驗證:`grep -c "debug_assert" crates/random-input-generator/src/rng.rs` 為 0,且 `cargo test -p random-input-generator` 全綠。
 
@@ -37,3 +37,8 @@
 
 - [x] 7.1 依 design「CI 恢復 default features 測試步驟」決策，.github/workflows/ci.yml 補回 `cargo test`（default features）步驟，形成 default / --all-features / --release --all-features 三步。行為契約：出貨組態（faker off）與 `cfg(not(feature = "faker"))` 拒絕測試在 CI 每次執行。驗證：本機三種組態全綠；ci.yml 含三個 Rust 測試步驟。
 - [x] 7.2 lib.rs 的 MAX_TESTCASES doc comment 改為誠實敘明僅上界輸入筆數（不宣稱防住 unbounded allocation）；README separator 節補 enum values 情形；rng.rs partial_shuffle_take 加 release 生效的自我描述 assert!。行為契約：合法輸入行為位元級不變，僅診斷與文件正確性改善。驗證：全測試套件三組態全綠。
+
+## 8. Round 3 硬化（第三輪 audit + adversarial review 產出）
+
+- [x] 8.1 依 design「抽樣分支改用實際抽出個數與內部不變式編譯期化」決策：rng.rs 分支改用實際 n（含註解同步）、generate_distinct 萬用臂展開為顯式 variant、random_len 統一 div_ceil。行為契約：對外輸出契約不變（演算法不指定範疇），新增 ParamSpec variant 時 rng 端成為編譯錯誤。驗證：四種組態（default / --all-features / --release / --release --all-features）全綠。
+- [x] 8.2 CI 補第四步 `cargo test --release`（default features = 出貨組態，AC-C1-5 字面滿足）並重寫 release 步驟註解；quality.rs 修正 Q1 secondary 路徑註解、增列第三組 q1_output_order_not_systematically_sorted_shuffle_path（值域 [1,50]、n=20）；README 補 multiple_of < 1 視同 1。行為契約：出貨組態在 CI 每次以 release 執行錯誤路徑 fixtures；展開洗牌分支有系統性排序守門。驗證：四種組態全綠。

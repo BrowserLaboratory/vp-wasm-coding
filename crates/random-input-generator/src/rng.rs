@@ -77,9 +77,13 @@ fn common_fields(spec: &ParamSpec) -> CommonFields<'_> {
 }
 
 /// Threshold factor for choosing the distinct-sampling strategy: domains up to
-/// `EXPAND_FACTOR × count.max` are materialised and partially shuffled (exact,
-/// handles the tight permutation case); larger domains use rejection sampling,
-/// where the per-draw collision probability stays below 1/EXPAND_FACTOR.
+/// `EXPAND_FACTOR × n` (the actually-drawn count, not `count.max`) are
+/// materialised and partially shuffled (exact, handles the tight permutation
+/// case); larger domains use rejection sampling, where the per-draw collision
+/// probability stays below 1/EXPAND_FACTOR. Comparing against `n` instead of
+/// `count.max` avoids materialising a pool sized for the worst-case count when
+/// the actual draw is much smaller (e.g. `count: {min: 1, max: 10000}` drawing
+/// `n = 1`).
 const EXPAND_FACTOR: i128 = 4;
 
 /// Sample `n` pairwise-distinct values for a distinct-enabled spec.
@@ -87,9 +91,9 @@ const EXPAND_FACTOR: i128 = 4;
 /// on every other type at construction time.
 fn generate_distinct<R: Rng>(spec: &ParamSpec, n: usize, rng: &mut R) -> Vec<String> {
     match spec {
-        ParamSpec::Int { min, max, count, .. } => {
+        ParamSpec::Int { min, max, .. } => {
             let domain_size = (*max as i128) - (*min as i128) + 1;
-            if domain_size <= EXPAND_FACTOR * count.max as i128 {
+            if domain_size <= EXPAND_FACTOR * n as i128 {
                 // Small domain: materialise and partially shuffle. Covers the
                 // tight case (domain == count.max → random permutation).
                 let pool: Vec<i64> = (*min..=*max).collect();
@@ -100,7 +104,7 @@ fn generate_distinct<R: Rng>(spec: &ParamSpec, n: usize, rng: &mut R) -> Vec<Str
             } else {
                 // Large domain: rejection sampling. parse_params guarantees
                 // domain_size >= count.max >= n, so this terminates; with
-                // domain > EXPAND_FACTOR × count.max the expected number of
+                // domain > EXPAND_FACTOR × n the expected number of
                 // retries per draw is below 1/(EXPAND_FACTOR - 1).
                 let mut seen = HashSet::with_capacity(n);
                 let mut out = Vec::with_capacity(n);
@@ -123,7 +127,20 @@ fn generate_distinct<R: Rng>(spec: &ParamSpec, n: usize, rng: &mut R) -> Vec<Str
                 .collect();
             partial_shuffle_take(pool, n, rng)
         }
-        _ => unreachable!("distinct on unsupported types is rejected by parse_params"),
+        // Explicit arms (no wildcard): adding a ParamSpec variant must be a
+        // compile error here, not a release-time panic — same principle as
+        // CommonFields replacing the positional tuple.
+        ParamSpec::AlphaUpper { .. }
+        | ParamSpec::AlphaLower { .. }
+        | ParamSpec::AlphaMixed { .. }
+        | ParamSpec::HexString { .. }
+        | ParamSpec::PrintableAscii { .. } => {
+            unreachable!("distinct on string types is rejected by parse_params")
+        }
+        #[cfg(feature = "faker")]
+        ParamSpec::Faker { .. } => {
+            unreachable!("distinct on faker types is rejected by parse_params")
+        }
     }
 }
 
@@ -151,8 +168,10 @@ fn partial_shuffle_take<T, R: Rng>(mut pool: Vec<T>, n: usize, rng: &mut R) -> V
 /// If multiple_of is 1 (the default), this is equivalent to gen_range(min..=max).
 fn random_len<R: Rng>(min_len: usize, max_len: usize, multiple_of: usize, rng: &mut R) -> usize {
     let step = multiple_of.max(1);
-    // Smallest multiple of `step` that is >= min_len
-    let lo = (min_len + step - 1) / step;
+    // Smallest multiple of `step` that is >= min_len (div_ceil mirrors
+    // parse_params::validate_len — keeps both sides overflow-safe by the
+    // same construction).
+    let lo = min_len.div_ceil(step);
     // Largest multiple of `step` that is <= max_len
     let hi = max_len / step;
     // `parse_params::validate_len` guarantees at least one multiple of `step`
@@ -599,8 +618,8 @@ mod tests {
 
     #[test]
     fn distinct_expansion_path_boundary() {
-        // domain size (8) <= 4 × count.max (2) is false → still must be distinct on
-        // either path; exercises small-domain sampling with n < domain
+        // domain size (8) <= 4 × n (8) — exact threshold boundary, lands on
+        // the materialise-and-shuffle path with n < domain
         let spec = parse_one(
             r#"{"n": {"type": "int", "min": 1, "max": 8, "count": {"min": 2, "max": 2}, "distinct": true}}"#,
         );

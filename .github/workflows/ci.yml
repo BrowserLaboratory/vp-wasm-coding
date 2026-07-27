@@ -63,10 +63,16 @@ jobs:
         run: cargo test --all-features
         working-directory: crates/random-input-generator
 
-      # Release-config run is mandatory: it proves construction-time validation
-      # (error-path fixtures) survives release builds, where debug_assert! is
-      # stripped. Also the only config where the Q3 performance tests run.
+      # Release + default features is the exact shipping configuration
+      # (wasm-pack builds release with faker off). AC-C1-5 requires the
+      # error-path fixtures to run at least once against a release-config
+      # build; this also guards against future debug-only assertions and is
+      # the only config where the Q3 performance tests run.
       - name: Test Rust crate (release)
+        run: cargo test --release
+        working-directory: crates/random-input-generator
+
+      - name: Test Rust crate (release, all features)
         run: cargo test --release --all-features
         working-directory: crates/random-input-generator
 

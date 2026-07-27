@@ -47,12 +47,32 @@ fn q1_output_order_not_systematically_sorted_primary() {
 }
 
 /// Q1 (secondary): n = 20, domain [1, 100] — guards against "only unsorted for
-/// certain parameters" (this hits the materialise-and-shuffle path).
+/// certain parameters". NOTE: 100 > 4 × 20, so this parameter set (given by
+/// requirement Part II) also lands on the rejection-sampling path.
 #[test]
 fn q1_output_order_not_systematically_sorted_secondary() {
     let mut rng = SmallRng::seed_from_u64(QUALITY_SEED + 1);
     let lines = lines_for(
         r#"{"n": {"type": "int", "min": 1, "max": 100, "count": {"min": 20, "max": 20}, "distinct": true}}"#,
+        1000,
+        &mut rng,
+    );
+    let (asc, desc) = fully_sorted_counts(&lines);
+    assert!(asc <= 10, "systematic ascending order: {asc}/1000 lines fully ascending");
+    assert!(desc <= 10, "systematic descending order: {desc}/1000 lines fully descending");
+}
+
+/// Q1 (tertiary, implementation-local addition): n = 20, domain [1, 50] —
+/// 50 <= 4 × 20, so this lands on the materialise-and-shuffle path. Added
+/// because both Part II parameter sets fall on the rejection path under this
+/// implementation's threshold strategy, leaving the shuffle branch without a
+/// systematic-sorting guard (e.g. a truncate-without-shuffle bug would pass
+/// Q2 uniformity). Same thresholds; seed self-held as per Part II.
+#[test]
+fn q1_output_order_not_systematically_sorted_shuffle_path() {
+    let mut rng = SmallRng::seed_from_u64(QUALITY_SEED + 4);
+    let lines = lines_for(
+        r#"{"n": {"type": "int", "min": 1, "max": 50, "count": {"min": 20, "max": 20}, "distinct": true}}"#,
         1000,
         &mut rng,
     );

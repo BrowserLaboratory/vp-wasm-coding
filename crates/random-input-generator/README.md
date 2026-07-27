@@ -40,6 +40,9 @@ or an `enum` whose `values` contain the separator) produces output that may be
 ambiguous to re-split or span multiple lines. Choose a separator that cannot
 collide with your value alphabet.
 
+**`multiple_of` below 1 is treated as 1.** A `multiple_of: 0` does not error;
+it behaves exactly like the default.
+
 ### Types
 
 | `type` | Fields (defaults) |
