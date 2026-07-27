@@ -1,0 +1,20 @@
+{
+  "description": "M10: n = 0 with prefix_count — line is exactly `0`",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 100,
+      "count": {
+        "min": 0,
+        "max": 0
+      },
+      "prefix_count": true
+    }
+  },
+  "expect": {
+    "line": {
+      "exact": "0"
+    }
+  }
+}

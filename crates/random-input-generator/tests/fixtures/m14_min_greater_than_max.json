@@ -1,0 +1,14 @@
+{
+  "description": "M14: min > max \u2014 construction-time error (release config too)",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 100,
+      "max": 10
+    }
+  },
+  "expect": {
+    "error": true,
+    "error_contains": "must be <= max"
+  }
+}

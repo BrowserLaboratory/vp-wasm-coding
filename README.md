@@ -11,7 +11,7 @@ Everything runs in the browser — **no server, and no COOP/COEP / cross-origin 
 | [`@cxphoenix/vp-wasm-coding`](packages/vitepress-code-runner) | VitePress layer: the SSR-safe `CodeRunner` component, composables, a configurable asset base, a Vite asset plugin, and a pluggable editor (default CodeMirror). |
 | [`@cxphoenix/vp-wasm-coding-core`](packages/code-runner-core) | Framework-agnostic engine (pure TypeScript, no Vue): the Pyodide module Worker and the executor/runner controllers. Use it directly outside VitePress. |
 
-The generator WASM ships **inside** `@cxphoenix/vp-wasm-coding` — a single install enables `generate_challenge` with zero extra configuration.
+The generator WASM ships **inside** `@cxphoenix/vp-wasm-coding` — a single install enables `generate_challenge` with zero extra configuration. The full `generatorParams` schema (types, `count`, `distinct`, `prefix_count`, limits — note that unknown keys are rejected) is documented in [`crates/random-input-generator/README.md`](crates/random-input-generator/README.md).
 
 ## Install
 

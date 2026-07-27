@@ -1,0 +1,24 @@
+{
+  "description": "M22: existing enum params without new fields — values from list, single token",
+  "params": {
+    "mode": {
+      "type": "enum",
+      "values": [
+        "ECB",
+        "CBC"
+      ]
+    }
+  },
+  "expect": {
+    "line": {
+      "count_range": [
+        1,
+        1
+      ],
+      "values_in": [
+        "ECB",
+        "CBC"
+      ]
+    }
+  }
+}

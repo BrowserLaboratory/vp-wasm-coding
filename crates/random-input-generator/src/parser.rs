@@ -1,5 +1,6 @@
 use indexmap::IndexMap;
 use serde::Deserialize;
+use std::collections::HashSet;
 
 // Define default values if not passing in.
 fn default_min_len() -> usize { 1 }
@@ -18,7 +19,12 @@ fn default_separator() -> String { " ".to_string() }
 /// {"min": 2, "max": 5, "separator": ","}
 /// ```
 /// All fields are optional; omitting the whole `count` key uses the defaults.
+// deny_unknown_fields: a typo'd key (e.g. "seperator") must fail loudly instead
+// of being silently dropped. NOTE: this attribute is incompatible with
+// #[serde(flatten)] — if R3 (dataset composite types) ever needs flatten, this
+// guarantee has to be re-provided another way.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct CountSpec {
     #[serde(default = "default_count_min")]
     pub min: usize,
@@ -36,8 +42,11 @@ impl Default for CountSpec {
 
 /// Supported parameter types for randomisation.
 /// Serialised in JSON with `"type"` as a discriminant tag.
+// deny_unknown_fields: a typo'd opt-in flag ("distnct", "prefix-count") would
+// otherwise silently default to false — a silent bypass of the guarantee the
+// flag exists to provide (and of its construction-time validation).
 #[derive(Debug, Deserialize, Clone, PartialEq)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ParamSpec {
     Int {
         #[serde(default = "default_min_int")]
@@ -46,6 +55,10 @@ pub enum ParamSpec {
         max: i64,
         #[serde(default)]
         count: CountSpec,
+        #[serde(default)]
+        distinct: bool,
+        #[serde(default)]
+        prefix_count: bool,
     },
     AlphaUpper {
         #[serde(default = "default_min_len")]
@@ -56,6 +69,10 @@ pub enum ParamSpec {
         multiple_of: usize,
         #[serde(default)]
         count: CountSpec,
+        #[serde(default)]
+        distinct: bool,
+        #[serde(default)]
+        prefix_count: bool,
     },
     AlphaLower {
         #[serde(default = "default_min_len")]
@@ -66,6 +83,10 @@ pub enum ParamSpec {
         multiple_of: usize,
         #[serde(default)]
         count: CountSpec,
+        #[serde(default)]
+        distinct: bool,
+        #[serde(default)]
+        prefix_count: bool,
     },
     AlphaMixed {
         #[serde(default = "default_min_len")]
@@ -76,6 +97,10 @@ pub enum ParamSpec {
         multiple_of: usize,
         #[serde(default)]
         count: CountSpec,
+        #[serde(default)]
+        distinct: bool,
+        #[serde(default)]
+        prefix_count: bool,
     },
     HexString {
         #[serde(default = "default_min_len")]
@@ -86,6 +111,10 @@ pub enum ParamSpec {
         multiple_of: usize,
         #[serde(default)]
         count: CountSpec,
+        #[serde(default)]
+        distinct: bool,
+        #[serde(default)]
+        prefix_count: bool,
     },
     PrintableAscii {
         #[serde(default = "default_min_len")]
@@ -96,17 +125,29 @@ pub enum ParamSpec {
         multiple_of: usize,
         #[serde(default)]
         count: CountSpec,
+        #[serde(default)]
+        distinct: bool,
+        #[serde(default)]
+        prefix_count: bool,
     },
     Enum {
         values: Vec<String>,
         #[serde(default)]
         count: CountSpec,
+        #[serde(default)]
+        distinct: bool,
+        #[serde(default)]
+        prefix_count: bool,
     },
     #[cfg(feature = "faker")]
     Faker {
         category: FakerCategory,
         #[serde(default)]
         count: CountSpec,
+        #[serde(default)]
+        distinct: bool,
+        #[serde(default)]
+        prefix_count: bool,
     },
 }
 
@@ -134,6 +175,18 @@ pub type Params = IndexMap<String, ParamSpec>;
 /// generous for an educational dojo. Validation is enforced in `parse_params`.
 const MAX_LEN: usize = 100_000;
 const MAX_COUNT: usize = 10_000;
+
+/// Ensure a distinct-enabled param can always fill a batch of `count.max`
+/// pairwise-distinct values. Failing at construction time is mandatory:
+/// sampling would otherwise loop forever (rejection) or silently repeat.
+fn validate_distinct_domain(name: &str, domain_size: i128, count_max: usize) -> Result<(), String> {
+    if domain_size < count_max as i128 {
+        return Err(format!(
+            "param '{name}': distinct requires domain size ({domain_size}) >= count.max ({count_max})"
+        ));
+    }
+    Ok(())
+}
 
 fn validate_count(name: &str, count: &CountSpec) -> Result<(), String> {
     if count.min > count.max {
@@ -200,30 +253,50 @@ pub fn parse_params(json_str: &str) -> Result<Params, String> {
         .map_err(|e| format!("JSON parse error: {e}"))?;
     for (name, spec) in &params {
         match spec {
-            ParamSpec::Int { min, max, count } => {
+            ParamSpec::Int { min, max, count, distinct, .. } => {
                 if min > max {
                     return Err(format!(
                         "param '{name}': min ({min}) must be <= max ({max})"
                     ));
                 }
                 validate_count(name, count)?;
+                if *distinct {
+                    // Widened arithmetic: the full i64 range would overflow
+                    // `max - min + 1` in i64, so compute the domain size in i128.
+                    let domain_size = (*max as i128) - (*min as i128) + 1;
+                    validate_distinct_domain(name, domain_size, count.max)?;
+                }
             }
-            ParamSpec::AlphaUpper { min_len, max_len, multiple_of, count }
-            | ParamSpec::AlphaLower { min_len, max_len, multiple_of, count }
-            | ParamSpec::AlphaMixed { min_len, max_len, multiple_of, count }
-            | ParamSpec::HexString { min_len, max_len, multiple_of, count }
-            | ParamSpec::PrintableAscii { min_len, max_len, multiple_of, count } => {
+            ParamSpec::AlphaUpper { min_len, max_len, multiple_of, count, distinct, .. }
+            | ParamSpec::AlphaLower { min_len, max_len, multiple_of, count, distinct, .. }
+            | ParamSpec::AlphaMixed { min_len, max_len, multiple_of, count, distinct, .. }
+            | ParamSpec::HexString { min_len, max_len, multiple_of, count, distinct, .. }
+            | ParamSpec::PrintableAscii { min_len, max_len, multiple_of, count, distinct, .. } => {
+                if *distinct {
+                    return Err(format!(
+                        "param '{name}': distinct is not supported for string types"
+                    ));
+                }
                 validate_len(name, *min_len, *max_len, *multiple_of)?;
                 validate_count(name, count)?;
             }
-            ParamSpec::Enum { values, count } => {
+            ParamSpec::Enum { values, count, distinct, .. } => {
                 if values.is_empty() {
                     return Err(format!("param '{name}': enum values must not be empty"));
                 }
                 validate_count(name, count)?;
+                if *distinct {
+                    let dedup_size = values.iter().collect::<HashSet<_>>().len();
+                    validate_distinct_domain(name, dedup_size as i128, count.max)?;
+                }
             }
             #[cfg(feature = "faker")]
-            ParamSpec::Faker { count, .. } => {
+            ParamSpec::Faker { count, distinct, .. } => {
+                if *distinct {
+                    return Err(format!(
+                        "param '{name}': distinct is not supported for faker types"
+                    ));
+                }
                 validate_count(name, count)?;
             }
         }
@@ -236,24 +309,167 @@ mod tests {
     use super::*;
 
     #[test]
+    fn distinct_and_prefix_count_default_to_false() {
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 10}}"#;
+        let params = parse_params(json).unwrap();
+        match &params["n"] {
+            ParamSpec::Int { distinct, prefix_count, .. } => {
+                assert!(!distinct);
+                assert!(!prefix_count);
+            }
+            other => panic!("expected Int, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_distinct_and_prefix_count_on_int() {
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 100, "count": {"min": 5, "max": 20}, "distinct": true, "prefix_count": true}}"#;
+        let params = parse_params(json).unwrap();
+        match &params["n"] {
+            ParamSpec::Int { distinct, prefix_count, .. } => {
+                assert!(distinct);
+                assert!(prefix_count);
+            }
+            other => panic!("expected Int, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_distinct_on_enum() {
+        let json = r#"{"c": {"type": "enum", "values": ["r", "g", "b"], "count": {"min": 2, "max": 3}, "distinct": true}}"#;
+        let params = parse_params(json).unwrap();
+        match &params["c"] {
+            ParamSpec::Enum { distinct, prefix_count, .. } => {
+                assert!(distinct);
+                assert!(!prefix_count);
+            }
+            other => panic!("expected Enum, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_prefix_count_on_string_type() {
+        let json = r#"{"s": {"type": "alpha_upper", "min_len": 2, "max_len": 4, "prefix_count": true}}"#;
+        let params = parse_params(json).unwrap();
+        match &params["s"] {
+            ParamSpec::AlphaUpper { distinct, prefix_count, .. } => {
+                assert!(!distinct);
+                assert!(prefix_count);
+            }
+            other => panic!("expected AlphaUpper, got {other:?}"),
+        }
+    }
+
+    // ── unknown fields are rejected (typo'd flags must not silently disable) ──
+
+    #[test]
+    fn misspelled_distinct_field_returns_error() {
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 10, "distnct": true}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("unknown field"), "got: {err}");
+    }
+
+    #[test]
+    fn hyphenated_prefix_count_field_returns_error() {
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 10, "prefix-count": true}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("unknown field"), "got: {err}");
+    }
+
+    #[test]
+    fn misspelled_nested_count_field_returns_error() {
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 10, "count": {"min": 2, "max": 3, "seperator": ","}}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("unknown field"), "got: {err}");
+    }
+
+    // ── distinct construction-time validation (M13, M16, M17, M21, overflow) ──
+
+    #[test]
+    fn distinct_domain_smaller_than_count_max_returns_error() {
+        // M13: domain size 3 < count.max 5
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 3, "count": {"min": 5, "max": 5}, "distinct": true}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("n"), "error should name the param, got: {err}");
+        assert!(err.contains("distinct"), "error should mention distinct, got: {err}");
+    }
+
+    #[test]
+    fn distinct_domain_exactly_count_max_is_valid() {
+        // M8 boundary: domain size == count.max is legal (permutation case)
+        let json = r#"{"n": {"type": "int", "min": 1, "max": 5, "count": {"min": 5, "max": 5}, "distinct": true}}"#;
+        assert!(parse_params(json).is_ok());
+    }
+
+    #[test]
+    fn distinct_on_string_type_returns_error() {
+        // M16: string types do not support distinct
+        let json = r#"{"s": {"type": "alpha_upper", "min_len": 1, "max_len": 5, "distinct": true}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("s"), "error should name the param, got: {err}");
+        assert!(err.contains("distinct"), "error should mention distinct, got: {err}");
+    }
+
+    #[test]
+    fn distinct_on_string_type_with_prefix_count_still_errors() {
+        // M17: prefix_count does not relax the distinct type restriction
+        let json = r#"{"s": {"type": "hex_string", "min_len": 1, "max_len": 5, "distinct": true, "prefix_count": true}}"#;
+        assert!(parse_params(json).is_err());
+    }
+
+    #[test]
+    fn distinct_enum_dedup_domain_too_small_returns_error() {
+        // M21: deduplicated values count 2 < count.max 3
+        let json = r#"{"c": {"type": "enum", "values": ["a", "b", "a"], "count": {"min": 3, "max": 3}, "distinct": true}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("c"), "error should name the param, got: {err}");
+    }
+
+    #[test]
+    fn distinct_enum_dedup_domain_exactly_count_max_is_valid() {
+        // M20 boundary: deduplicated domain == count.max
+        let json = r#"{"c": {"type": "enum", "values": ["a", "b", "a", "c"], "count": {"min": 3, "max": 3}, "distinct": true}}"#;
+        assert!(parse_params(json).is_ok());
+    }
+
+    #[test]
+    fn distinct_full_i64_range_does_not_overflow() {
+        // Domain size computation must be overflow-safe across the full i64 range
+        let json = format!(
+            r#"{{"n": {{"type": "int", "min": {}, "max": {}, "count": {{"min": 1, "max": 100}}, "distinct": true}}}}"#,
+            i64::MIN, i64::MAX
+        );
+        assert!(parse_params(&json).is_ok());
+    }
+
+    #[test]
+    fn basic_bounds_checks_active_regardless_of_distinct() {
+        // M14/M15 stay in effect whether or not distinct is declared
+        let with_distinct = r#"{"n": {"type": "int", "min": 100, "max": 10, "distinct": true}}"#;
+        assert!(parse_params(with_distinct).is_err());
+        let without = r#"{"n": {"type": "int", "min": 1, "max": 10, "count": {"min": 5, "max": 2}, "distinct": true}}"#;
+        assert!(parse_params(without).is_err());
+    }
+
+    #[test]
     fn parses_int_param() {
         let json = r#"{"shift": {"type": "int", "min": 1, "max": 25}}"#;
         let params = parse_params(json).unwrap();
-        assert_eq!(params["shift"], ParamSpec::Int { min: 1, max: 25, count: CountSpec::default() });
+        assert_eq!(params["shift"], ParamSpec::Int { min: 1, max: 25, count: CountSpec::default(), distinct: false, prefix_count: false });
     }
 
     #[test]
     fn parses_alpha_upper_param() {
         let json = r#"{"pt": {"type": "alpha_upper", "min_len": 5, "max_len": 12}}"#;
         let params = parse_params(json).unwrap();
-        assert_eq!(params["pt"], ParamSpec::AlphaUpper { min_len: 5, max_len: 12, multiple_of: 1, count: CountSpec::default() });
+        assert_eq!(params["pt"], ParamSpec::AlphaUpper { min_len: 5, max_len: 12, multiple_of: 1, count: CountSpec::default(), distinct: false, prefix_count: false });
     }
 
     #[test]
     fn parses_hex_string_param() {
         let json = r#"{"k": {"type": "hex_string", "min_len": 32, "max_len": 32}}"#;
         let params = parse_params(json).unwrap();
-        assert_eq!(params["k"], ParamSpec::HexString { min_len: 32, max_len: 32, multiple_of: 1, count: CountSpec::default() });
+        assert_eq!(params["k"], ParamSpec::HexString { min_len: 32, max_len: 32, multiple_of: 1, count: CountSpec::default(), distinct: false, prefix_count: false });
     }
 
     #[test]
@@ -282,21 +498,21 @@ mod tests {
     fn parses_alpha_lower_param() {
         let json = r#"{"pt": {"type": "alpha_lower", "min_len": 3, "max_len": 8}}"#;
         let params = parse_params(json).unwrap();
-        assert_eq!(params["pt"], ParamSpec::AlphaLower { min_len: 3, max_len: 8, multiple_of: 1, count: CountSpec::default() });
+        assert_eq!(params["pt"], ParamSpec::AlphaLower { min_len: 3, max_len: 8, multiple_of: 1, count: CountSpec::default(), distinct: false, prefix_count: false });
     }
 
     #[test]
     fn parses_alpha_mixed_param() {
         let json = r#"{"pt": {"type": "alpha_mixed", "min_len": 4, "max_len": 16}}"#;
         let params = parse_params(json).unwrap();
-        assert_eq!(params["pt"], ParamSpec::AlphaMixed { min_len: 4, max_len: 16, multiple_of: 1, count: CountSpec::default() });
+        assert_eq!(params["pt"], ParamSpec::AlphaMixed { min_len: 4, max_len: 16, multiple_of: 1, count: CountSpec::default(), distinct: false, prefix_count: false });
     }
 
     #[test]
     fn parses_printable_ascii_param() {
         let json = r#"{"msg": {"type": "printable_ascii", "min_len": 10, "max_len": 20}}"#;
         let params = parse_params(json).unwrap();
-        assert_eq!(params["msg"], ParamSpec::PrintableAscii { min_len: 10, max_len: 20, multiple_of: 1, count: CountSpec::default() });
+        assert_eq!(params["msg"], ParamSpec::PrintableAscii { min_len: 10, max_len: 20, multiple_of: 1, count: CountSpec::default(), distinct: false, prefix_count: false });
     }
 
     #[test]
@@ -308,6 +524,8 @@ mod tests {
             min: 1,
             max: 25,
             count: CountSpec { min: 3, max: 3, separator: " ".to_string() },
+            distinct: false,
+            prefix_count: false,
         });
     }
 
@@ -317,7 +535,7 @@ mod tests {
         let params = parse_params(json).unwrap();
         assert_eq!(
             params["pt"],
-            ParamSpec::AlphaUpper { min_len: 5, max_len: 10, multiple_of: 1, count: CountSpec::default() }
+            ParamSpec::AlphaUpper { min_len: 5, max_len: 10, multiple_of: 1, count: CountSpec::default(), distinct: false, prefix_count: false }
         );
     }
 
@@ -326,8 +544,8 @@ mod tests {
         let json = r#"{"a": {"type": "int", "min": 1, "max": 10}, "b": {"type": "alpha_lower", "min_len": 3, "max_len": 5}}"#;
         let params = parse_params(json).unwrap();
         assert_eq!(params.len(), 2);
-        assert_eq!(params["a"], ParamSpec::Int { min: 1, max: 10, count: CountSpec::default() });
-        assert_eq!(params["b"], ParamSpec::AlphaLower { min_len: 3, max_len: 5, multiple_of: 1, count: CountSpec::default() });
+        assert_eq!(params["a"], ParamSpec::Int { min: 1, max: 10, count: CountSpec::default(), distinct: false, prefix_count: false });
+        assert_eq!(params["b"], ParamSpec::AlphaLower { min_len: 3, max_len: 5, multiple_of: 1, count: CountSpec::default(), distinct: false, prefix_count: false });
     }
 
     #[test]
@@ -339,6 +557,8 @@ mod tests {
             min: 1,
             max: 100,
             count: CountSpec { min: 2, max: 5, separator: " ".to_string() },
+            distinct: false,
+            prefix_count: false,
         });
     }
 
@@ -349,6 +569,8 @@ mod tests {
         assert_eq!(params["mode"], ParamSpec::Enum {
             values: vec!["ECB".to_string(), "CBC".to_string()],
             count: CountSpec::default(),
+            distinct: false,
+            prefix_count: false,
         });
     }
 
@@ -418,6 +640,8 @@ mod tests {
         assert_eq!(params["mode"], ParamSpec::Enum {
             values: vec!["A".to_string(), "B".to_string(), "C".to_string()],
             count: CountSpec { min: 2, max: 3, separator: ",".to_string() },
+            distinct: false,
+            prefix_count: false,
         });
     }
 
@@ -429,6 +653,8 @@ mod tests {
             min: 1,
             max: 10,
             count: CountSpec { min: 3, max: 3, separator: ",".to_string() },
+            distinct: false,
+            prefix_count: false,
         });
     }
 
@@ -441,6 +667,8 @@ mod tests {
             max_len: 64,
             multiple_of: 16,
             count: CountSpec::default(),
+            distinct: false,
+            prefix_count: false,
         });
     }
 
@@ -453,6 +681,8 @@ mod tests {
             max_len: 16,
             multiple_of: 1,
             count: CountSpec::default(),
+            distinct: false,
+            prefix_count: false,
         });
     }
 
@@ -468,12 +698,22 @@ mod tests {
 
     #[cfg(feature = "faker")]
     #[test]
+    fn distinct_on_faker_returns_error() {
+        let json = r#"{"name": {"type": "faker", "category": "name", "distinct": true}}"#;
+        let err = parse_params(json).unwrap_err();
+        assert!(err.contains("distinct"), "error should mention distinct, got: {err}");
+    }
+
+    #[cfg(feature = "faker")]
+    #[test]
     fn parses_faker_param_with_feature() {
         let json = r#"{"name": {"type": "faker", "category": "name"}}"#;
         let params = parse_params(json).unwrap();
         assert_eq!(params["name"], ParamSpec::Faker {
             category: FakerCategory::Name,
             count: CountSpec::default(),
+            distinct: false,
+            prefix_count: false,
         });
     }
 }

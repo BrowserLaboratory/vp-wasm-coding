@@ -1,0 +1,29 @@
+{
+  "description": "M1: int/distinct — pairwise distinct, count in [5,20], values in [1,1e6], order checked by Q1",
+  "params": {
+    "numbers": {
+      "type": "int",
+      "min": 1,
+      "max": 1000000,
+      "count": {
+        "min": 5,
+        "max": 20
+      },
+      "distinct": true
+    }
+  },
+  "iterations": 100,
+  "expect": {
+    "line": {
+      "distinct": true,
+      "count_range": [
+        5,
+        20
+      ],
+      "int_range": [
+        1,
+        1000000
+      ]
+    }
+  }
+}

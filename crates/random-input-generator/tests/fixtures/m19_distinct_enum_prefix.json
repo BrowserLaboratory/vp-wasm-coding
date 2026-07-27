@@ -1,0 +1,36 @@
+{
+  "description": "M19: enum/distinct+prefix_count — M18 plus prefix format",
+  "params": {
+    "c": {
+      "type": "enum",
+      "values": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "count": {
+        "min": 2,
+        "max": 3
+      },
+      "distinct": true,
+      "prefix_count": true
+    }
+  },
+  "expect": {
+    "line": {
+      "prefix_count": true,
+      "distinct": true,
+      "count_range": [
+        2,
+        3
+      ],
+      "values_in": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ]
+    }
+  }
+}

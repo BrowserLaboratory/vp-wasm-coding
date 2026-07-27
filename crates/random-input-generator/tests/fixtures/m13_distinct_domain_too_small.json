@@ -1,0 +1,19 @@
+{
+  "description": "M13: domain size < count.max with distinct — construction-time error",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 3,
+      "count": {
+        "min": 5,
+        "max": 5
+      },
+      "distinct": true
+    }
+  },
+  "expect": {
+    "error": true,
+    "error_contains": "distinct"
+  }
+}

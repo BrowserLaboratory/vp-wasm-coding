@@ -1,0 +1,15 @@
+{
+  "description": "M16: string type with distinct — construction-time error (unsupported type)",
+  "params": {
+    "s": {
+      "type": "alpha_upper",
+      "min_len": 1,
+      "max_len": 5,
+      "distinct": true
+    }
+  },
+  "expect": {
+    "error": true,
+    "error_contains": "distinct"
+  }
+}

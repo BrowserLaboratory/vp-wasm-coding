@@ -1,0 +1,19 @@
+{
+  "description": "M11: n = 0 without prefix_count — empty line (existing behavior)",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 100,
+      "count": {
+        "min": 0,
+        "max": 0
+      }
+    }
+  },
+  "expect": {
+    "line": {
+      "exact": ""
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "description": "M22: existing int params without new fields — semantics unchanged",
+  "params": {
+    "shift": {
+      "type": "int",
+      "min": 1,
+      "max": 25
+    }
+  },
+  "expect": {
+    "line": {
+      "count_range": [
+        1,
+        1
+      ],
+      "int_range": [
+        1,
+        25
+      ]
+    }
+  }
+}

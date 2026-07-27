@@ -1,0 +1,30 @@
+{
+  "description": "M5: prefix_count with non-space separator — `n,x1,...,xn` join semantics",
+  "params": {
+    "n": {
+      "type": "int",
+      "min": 1,
+      "max": 100,
+      "count": {
+        "min": 3,
+        "max": 3,
+        "separator": ","
+      },
+      "prefix_count": true
+    }
+  },
+  "expect": {
+    "line": {
+      "separator": ",",
+      "prefix_count": true,
+      "count_range": [
+        3,
+        3
+      ],
+      "int_range": [
+        1,
+        100
+      ]
+    }
+  }
+}
